@@ -1,0 +1,5 @@
+edge-tts
+soundfile
+sounddevice
+fastapi
+uvicorn
