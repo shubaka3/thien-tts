@@ -8,6 +8,8 @@ from pydantic import BaseModel
 import edge_tts
 from fastapi import FastAPI, HTTPException, Request
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 # --- FastAPI init ---
 app = FastAPI()
@@ -18,6 +20,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 os.makedirs("output", exist_ok=True)
+
+
+# Serve toàn bộ thư mục UI như static files
+app.mount("/ui", StaticFiles(directory="ui"), name="ui")
+
+# Tự động render UI gốc khi vào "/"
+@app.get("/")
+async def serve_root():
+    return FileResponse("ui/chat-widget.html")
+
 
 # --- Map giọng đọc ---
 VOICE_MAP = {

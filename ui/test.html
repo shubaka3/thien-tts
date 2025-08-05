@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .description {
+            margin-bottom: 15px;
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat Widget Embed Test</h1>
+        
+        <div class="test-section">
+            <h2>Test 1: Basic Embed</h2>
+            <div class="description">
+                This test demonstrates the basic embed functionality with all required parameters.
+            </div>
+            <div class="code-block">
+&lt;script src="/embed.js?encryption_api=test_ai_123&encryption_secret=test_collection_456&email=test_user_789@gmail.com"&gt;&lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 2: Different User</h2>
+            <div class="description">
+                Test with a different user email to verify user ID retrieval.
+            </div>
+            <div class="code-block">
+&lt;script src="/embed.js?encryption_api=test_ai_123&encryption_secret=test_collection_456&email=another_user@example.com"&gt;&lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 3: Different AI and Collection</h2>
+            <div class="description">
+                Test with different AI ID and collection ID parameters.
+            </div>
+            <div class="code-block">
+&lt;script src="/embed.js?encryption_api=production_ai_456&encryption_secret=production_collection_789&email=production_user@company.com"&gt;&lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>API Flow Documentation</h2>
+            <div class="description">
+                The embed script follows this flow:
+                <ol>
+                    <li>Extracts parameters from script URL (encryption_api, encryption_secret, email)</li>
+                    <li>Passes parameters to chat-widget.html via URL parameters</li>
+                    <li>Chat widget retrieves user ID from: <code>http://localhost:3030/api/user-id?email=user@example.com</code></li>
+                    <li>Sends chat requests to: <code>http://localhost:3030/api/chat/completions</code></li>
+                    <li>In voice mode, calls TTS API: <code>http://localhost:8005/synthesize/</code></li>
+                    <li>Plays audio and deletes file after playback</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Expected API Responses</h2>
+            <div class="description">
+                <strong>User ID Response:</strong><br>
+                <div class="code-block">
+{
+    "user_id": "8d7b3d7f-8fcb-4d63-9b1b-3f2f82c42e24"
+}
+                </div>
+                
+                <strong>Chat Response:</strong><br>
+                <div class="code-block">
+{
+    "answer": "Hello, I am an AI assistant. How can I help you today?",
+    "sources": [
+        {
+            "metadata": {
+                "id": 459870779492522855,
+                "metadata": {
+                    "page": 1,
+                    "source": "document.pdf",
+                    "total_pages": 2
+                }
+            },
+            "page_content": "Document content used for answering"
+        }
+    ]
+}
+                </div>
+                
+                <strong>TTS Response:</strong><br>
+                <div class="code-block">
+{
+    "text": "Hello, I am an AI assistant.",
+    "voice": "nam",
+    "audio_file": "http://localhost:8005/download/abc123.mp3"
+}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embed the chat widget for testing -->
+    <script src="https://vmentor.emg.edu.vn/ui/embed.js?encryption_api=9c597057-88f0-432c-8b64-6de71f2630cb&encryption_secret=5d948dd8-ba56-4ab5-b383-5324321037de&email=user@example.com"></script>
+</body>
+</html>
