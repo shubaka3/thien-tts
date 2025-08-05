@@ -7,6 +7,40 @@ const email = urlParams.get('email') || 'user@example.com';
 console.log("Using AI type:", aiType);
 console.log("Parameters:", { encryption_api, encryption_secret, email });
 
+let audioUnlocked = false;
+
+function unlockAudioPlayback() {
+    if (audioUnlocked) return;
+
+    const silentAudio = new Audio();
+
+    // ✅ Phương án 1: dùng file local (nếu có)
+    silentAudio.src = "https://vmentor.emg.edu.vn/ui/audio.mp3";
+
+    // Nếu load file thất bại → fallback về base64
+    silentAudio.onerror = () => {
+        console.warn("⚠️ Failed to load external audio. Falling back to base64 silent audio.");
+
+        // ✅ Phương án 2: dùng base64 (silent)
+        silentAudio.src = "data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAA==";
+        silentAudio.play().then(() => {
+            console.log("🔓 Audio unlocked via fallback");
+            audioUnlocked = true;
+        }).catch((e) => {
+            console.warn("🔒 Unlock failed on fallback", e);
+        });
+    };
+
+    // Cố gắng play file silent (ui/audio.mp3)
+    silentAudio.play().then(() => {
+        console.log("🔓 Audio unlocked");
+        audioUnlocked = true;
+    }).catch((e) => {
+        console.warn("🔒 Unlock failed on first attempt", e);
+    });
+}
+
+
 class ChatWidget {
     constructor() {
         this.config = window.APP_CONFIG || {};
@@ -68,6 +102,7 @@ class ChatWidget {
             if (e.key === 'Enter') this.sendMessage();
         });
         document.getElementById('voice-record-btn').addEventListener('click', async () => {
+            unlockAudioPlayback(); 
             await this.toggleVoiceRecording();
         });
         document.getElementById('voice-stop-btn').addEventListener('click', () => {
