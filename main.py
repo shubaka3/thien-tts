@@ -1,9 +1,3 @@
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
-
 import os
 import uuid
 import asyncio
@@ -17,9 +11,6 @@ from fastapi import FastAPI, HTTPException, Request
 
 # --- FastAPI init ---
 app = FastAPI()
-
-app.add_middleware(ProxyHeadersMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
