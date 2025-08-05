@@ -105,6 +105,7 @@ VOICE_MAP = {
 
 
 
+BASE_URL = "https://vmentor.emg.edu.vn/"
 
 # --- Schema ---
 class SynthesisRequest(BaseModel):
@@ -120,16 +121,13 @@ def resolve_voice(voice_name: str) -> str:
 @app.post("/synthesize/")
 async def synthesize(data: SynthesisRequest, request: Request):
     resolved_voice = resolve_voice(data.voice)
-    print(f"Resolved voice: {resolved_voice}")
-    print(f"Text to synthesize: {data.text}")
     uid = str(uuid.uuid4())
     mp3_path = f"output/{uid}.mp3"
 
     communicate = edge_tts.Communicate(data.text, resolved_voice)
     await communicate.save(mp3_path)
 
-    # Use request.base_url to generate the correct URL for the client
-    audio_url = str(request.base_url) + f"download/{uid}.mp3"
+    audio_url = BASE_URL + f"download/{uid}.mp3"
     return {
         "text": data.text,
         "voice": data.voice,
@@ -147,7 +145,7 @@ async def demo(voice: str, request: Request):
     communicate = edge_tts.Communicate(demo_text, resolved_voice)
     await communicate.save(mp3_path)
 
-    audio_url = str(request.base_url) + f"download/{uid}.mp3"
+    audio_url = BASE_URL + f"download/{uid}.mp3"
     return {
         "text": demo_text,
         "voice": resolved_voice,
