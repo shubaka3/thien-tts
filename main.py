@@ -6,6 +6,17 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import edge_tts
+from fastapi import FastAPI, HTTPException, Request
+
+# --- FastAPI init ---
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+os.makedirs("output", exist_ok=True)
 
 # --- Map giọng đọc ---
 VOICE_MAP = {
@@ -59,7 +70,7 @@ VOICE_MAP = {
     "tessa": "en-ZA-TessaNeural",
 
     # --- Tiếng Việt ---
-    "nam": "vi-VN-NamNeural",
+    "nam": "vi-VN-NamMinhNeural",
     "hoai_my": "vi-VN-HoaiMyNeural",
 
     # --- Tiếng Nhật ---
@@ -92,15 +103,7 @@ VOICE_MAP = {
 }
 
 
-# --- FastAPI init ---
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-os.makedirs("output", exist_ok=True)
+
 
 # --- Schema ---
 class SynthesisRequest(BaseModel):
@@ -114,28 +117,27 @@ def resolve_voice(voice_name: str) -> str:
 
 # --- API chính ---
 @app.post("/synthesize/")
-async def synthesize(data: SynthesisRequest):
+async def synthesize(data: SynthesisRequest, request: Request):
     resolved_voice = resolve_voice(data.voice)
+    print(f"Resolved voice: {resolved_voice}")
+    print(f"Text to synthesize: {data.text}")
     uid = str(uuid.uuid4())
     mp3_path = f"output/{uid}.mp3"
 
     communicate = edge_tts.Communicate(data.text, resolved_voice)
     await communicate.save(mp3_path)
 
+    # Use request.base_url to generate the correct URL for the client
+    audio_url = str(request.base_url) + f"download/{uid}.mp3"
     return {
         "text": data.text,
-<<<<<<< HEAD
         "voice": data.voice,
-        "audio_file": f"http://192.168.144.1:8005/download/{uid}.mp3"
-=======
-        "voice": resolved_voice,
-        "audio_file": f"http://192.168.1.143:8005/download/{uid}.mp3"
->>>>>>> 6eaeab7a1433cfea700005c50b54e38187f6f93d
+        "audio_file": audio_url
     }
 
 # --- API demo ---
 @app.get("/demo/{voice}")
-async def demo(voice: str):
+async def demo(voice: str, request: Request):
     resolved_voice = resolve_voice(voice)
     uid = str(uuid.uuid4())
     mp3_path = f"output/{uid}.mp3"
@@ -144,10 +146,11 @@ async def demo(voice: str):
     communicate = edge_tts.Communicate(demo_text, resolved_voice)
     await communicate.save(mp3_path)
 
+    audio_url = str(request.base_url) + f"download/{uid}.mp3"
     return {
         "text": demo_text,
         "voice": resolved_voice,
-        "audio_file": f"http://192.168.1.143:8005/download/{uid}.mp3"
+        "audio_file": audio_url
     }
 
 # --- Download & Delete ---
