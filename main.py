@@ -38,7 +38,7 @@ async def synthesize(data: SynthesisRequest):
     return {
         "text": data.text,
         "voice": data.voice,
-        "audio_file": f"http://192.168.1.143:8005/download/{uid}.mp3"
+        "audio_file": f"http://192.168.144.1:8005/download/{uid}.mp3"
     }
 
 # Endpoint tải file nhị phân

@@ -5,4 +5,16 @@ edge-tts --voice vi-VN-NamMinhNeural --text "Một tuần đã trôi qua. Gor…
 
 vi-VN-HoaiMyNeural
 
-chạy với uvicorn main:app --reload --host 0.0.0.0 --port 8005
+chạy với:
+    http://127.0.0.1:8005/synthesize/
+    body - raw
+    {
+    "text": "Xin chào Việt Nam!",
+    "voice": "vi-VN-NamMinhNeural"
+    }
+
+    uvicorn main:app --reload --host 0.0.0.0 --port 8005
+
+
+thứ tự:
+    clone về, cài đặt thư viện, chạy lệnh trên
