@@ -102,9 +102,16 @@ class ChatWidget {
             if (e.key === 'Enter') this.sendMessage();
         });
         document.getElementById('voice-record-btn').addEventListener('click', async () => {
+            // Bắt buộc kích hoạt AudioContext (vì context chưa resume nên bị chặn autoplay)
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                await this.audioCtx.resume();
+                console.log('🔊 AudioContext resumed on user interaction');
+            }
+
             unlockAudioPlayback(); 
             await this.toggleVoiceRecording();
         });
+
         document.getElementById('voice-stop-btn').addEventListener('click', () => {
             this.stopVoiceRecording();
         });
@@ -485,7 +492,16 @@ class ChatWidget {
     }
 
     async playAudioWithVisualizer(audioUrl) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            if (this.audioCtx.state === 'suspended') {
+                try {
+                    await this.audioCtx.resume();
+                    console.log('🔊 Resumed AudioContext before playing audio');
+                } catch (e) {
+                    console.error('Failed to resume AudioContext', e);
+                }
+            }
+
             this.audio = new Audio(audioUrl);
             this.audio.crossOrigin = "anonymous";
 
@@ -500,9 +516,16 @@ class ChatWidget {
                 console.error('Audio playback error:', error);
                 reject(error);
             };
-            this.audio.play().catch(reject);
+
+            try {
+                await this.audio.play();
+            } catch (e) {
+                console.error('Failed to play audio:', e);
+                reject(e);
+            }
         });
     }
+
 
     async deleteAudioFile(audioUrl) {
         try {
