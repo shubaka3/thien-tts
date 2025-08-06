@@ -75,7 +75,7 @@ class ChatWidget {
     async init() {
         await this.getUserId();
         this.bindEvents();
-        this.setupLanguageSelector();
+        // this.setupLanguageSelector();
         this.setupModeSwitcher();
         this.setupSpeechRecognition();
         this.setupVoiceVisualizer();
@@ -123,21 +123,25 @@ class ChatWidget {
     setupLanguageSelector() {
         const langButtons = document.querySelectorAll(".lang-btn");
         const messageInput = document.getElementById('message-input');
-        
+
         langButtons.forEach(button => {
-            button.addEventListener("click", () => {
-                langButtons.forEach(btn => btn.classList.remove("active"));
-                button.classList.add("active");
-                
-                this.currentLanguage = button.getAttribute("data-lang");
-                this.currentLangCode = button.getAttribute("data-lang-code");
+            // Xóa sự kiện cũ bằng cách replace node
+            const newBtn = button.cloneNode(true);
+            button.parentNode.replaceChild(newBtn, button);
+
+            newBtn.addEventListener("click", () => {
+                document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.remove("active"));
+                newBtn.classList.add("active");
+
+                this.currentLanguage = newBtn.getAttribute("data-lang");
+                this.currentLangCode = newBtn.getAttribute("data-lang-code");
 
                 if (this.currentLangCode === 'vi-VN') {
                     messageInput.placeholder = "Nhập tin nhắn...";
                 } else {
                     messageInput.placeholder = "Enter a message...";
                 }
-                
+
                 if (this.recognition) {
                     this.recognition.lang = this.currentLangCode;
                 }
@@ -157,6 +161,7 @@ class ChatWidget {
                 textInputArea.style.display = 'none';
                 voiceModeInterface.classList.add('active');
                 this.startVoiceVisualizer();
+                this.setupLanguageSelector();
             } else {
                 textInputArea.style.display = 'block';
                 voiceModeInterface.classList.remove('active');

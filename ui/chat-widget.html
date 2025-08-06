@@ -11,9 +11,13 @@
     <div class="chat-body">
         <header>
             <div class="header-title">AI Assistant</div>
-            <div class="lang-select">
-                <button class="lang-btn active" data-lang="Tiếng Việt" data-lang-code="vi-VN">MALE</button>
-                <button class="lang-btn" data-lang="English" data-lang-code="en-US">FEMALE</button>
+            <div class="mode-switcher">
+                <span><b>Text</b></span>
+                <label class="switch">
+                    <input type="checkbox" id="mode-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <span><b>Voice</b></span>
             </div>
         </header>
 
@@ -39,7 +43,10 @@
             </div>
             
             <div class="voice-text-display" id="voice-text-display">...</div>
-            
+            <div class="lang-select">
+                <button class="lang-btn active" data-lang="Tiếng Việt" data-lang-code="vi-VN">MALE</button>
+                <button class="lang-btn" data-lang="English" data-lang-code="en-US">FEMALE</button>
+            </div>
             <div class="voice-controls">
                 <button class="voice-btn" id="voice-record-btn">Start Talking</button>
                 <button class="voice-btn" id="voice-stop-btn" style="display: none;">Stop</button>
@@ -56,7 +63,7 @@
                     </button>
                 </div>
             </div>
-
+<!-- 
             <div class="mode-switcher">
                 <span>Text</span>
                 <label class="switch">
@@ -64,7 +71,7 @@
                     <span class="slider round"></span>
                 </label>
                 <span>Voice</span>
-            </div>
+            </div> -->
         </div>
     </div>
 

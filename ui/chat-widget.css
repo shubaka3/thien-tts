@@ -1,6 +1,6 @@
 :root {
     --primary-color: #007bff;
-    --voice-color: #00ffee;
+    --voice-color: #ffa600;
 }
 
 * {
@@ -58,6 +58,13 @@ header {
     font-weight: bold;
     transition: background-color 0.3s;
     font-size: 0.9em;
+}
+.voice-mode-interface .lang-select {
+    position: absolute;
+    z-index: 5;
+    top: 200px; /* hoặc điều chỉnh theo vị trí bạn muốn dưới avatar */
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .lang-btn:hover {
@@ -195,7 +202,7 @@ header {
 #voice-visualizer-canvas {
     position: absolute;
     z-index: 1;
-    filter: drop-shadow(0 0 20px rgba(0, 255, 238, 0.8));
+    filter: drop-shadow(0 0 20px rgba(255, 153, 0, 0.8));
 }
 
 .voice-avatar {
@@ -268,13 +275,16 @@ header {
 
 /* Mode Switcher */
 .mode-switcher {
-    display: flex;
+    background: orange;
     justify-content: center;
     align-items: center;
     gap: 10px;
-    padding-top: 15px;
+    padding: 7px;
     font-size: 0.9em;
     color: #555;
+    display: flex;
+    border: solid 2px black;
+    border-radius: 50px;
 }
 
 .switch {
