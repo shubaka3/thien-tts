@@ -11,8 +11,7 @@
     // Lấy tham số AI từ query param
     const aiType = scriptUrl.searchParams.get('ai') || 'default';
     const config = window.APP_CONFIG || {
-        // CHAT_IFRAME_URL: `https://vmentor.emg.edu.vn/ui/chat-widget.html?ai=${aiType}&encryption_api=${encryption_api}&encryption_secret=${encryption_secret}&email=${email}`,
-        CHAT_IFRAME_URL: `http://localhost:5500/ui/chat-widget.html?ai=${aiType}&encryption_api=${encryption_api}&encryption_secret=${encryption_secret}&email=${email}`,
+        CHAT_IFRAME_URL: `https://vmentor.emg.edu.vn/ui/chat-widget.html?ai=${aiType}&encryption_api=${encryption_api}&encryption_secret=${encryption_secret}&email=${email}`,
         PRIMARY_COLOR: '#0091FC'
     };
 
