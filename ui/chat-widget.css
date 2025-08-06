@@ -62,7 +62,7 @@ header {
 .voice-mode-interface .lang-select {
     position: absolute;
     z-index: 5;
-    top: 20px;
+    top: 25px;
     left: 50%;
     transform: translateX(-50%);
 }
