@@ -62,7 +62,7 @@ header {
 .voice-mode-interface .lang-select {
     position: absolute;
     z-index: 5;
-    top: 200px; /* hoặc điều chỉnh theo vị trí bạn muốn dưới avatar */
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
 }
