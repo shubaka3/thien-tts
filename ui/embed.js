@@ -83,7 +83,7 @@
     `;
     
     // Add CORS headers for iframe
-    chatIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+    chatIframe.removeAttribute('sandbox');
     chatIframe.setAttribute('allow', 'microphone; camera; autoplay');
 
     document.body.appendChild(chatIframe);
