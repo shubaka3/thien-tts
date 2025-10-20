@@ -66,55 +66,5 @@ window.APP_CONFIG = {
     }
 };
 
-// Utility functions
-window.APP_UTILS = {
-    // Format message content
-    formatMessage: function(content) {
-        if (!content) return '';
-        
-        // Basic HTML escaping
-        content = content.replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#39;');
-        
-        // Convert URLs to links
-        content = content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-        
-        return content;
-    },
-    
-    // Get current timestamp
-    getCurrentTimestamp: function() {
-        return new Date().toISOString();
-    },
-    
-    // Generate unique ID
-    generateId: function() {
-        return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    },
-    
-    // Check if mobile device
-    isMobile: function() {
-        return window.innerWidth <= 768;
-    },
-    
-    // Debounce function
-    debounce: function(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-};
-
-// Export for Node.js if needed
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { APP_CONFIG: window.APP_CONFIG, APP_UTILS: window.APP_UTILS };
-}
+// audio là dùng để cheat trình duyệt, nó cấm auto play, nên phải có tương tác người dùng mới được
+// tạo 1 audio fake và trình giả lập click để cho phép autoplay

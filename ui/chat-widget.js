@@ -1,3 +1,9 @@
+const DOMAIN_BASE = 'https://vmentor.emg.edu.vn';
+const SERVICE_BASE = 'https://vmentor-service.emg.edu.vn';
+const AVATAR_BOT_URL = 'https://digital.com.vn/wp-content/uploads/2025/03/ai-bot.jpg';
+const AVATAR_USER_URL = 'https://static.vecteezy.com/system/resources/thumbnails/004/607/791/small_2x/man-face-emotive-icon-smiling-male-character-in-blue-shirt-flat-illustration-isolated-on-white-happy-human-psychological-portrait-positive-emotions-user-avatar-for-app-web-design-vector.jpg';
+const AUDIO_MP3_URL = `${DOMAIN_BASE}/ui/audio.mp3`;
+
 const urlParams = new URLSearchParams(window.location.search);
 const aiType = urlParams.get('ai') || 'default';
 const encryption_api = urlParams.get('encryption_api') || 'default';
@@ -77,7 +83,7 @@ class ChatWidget {
 
     async getUserId() {
         try {
-            const response = await fetch(`https://vmentor-service.emg.edu.vn/api/user-id?email=${encodeURIComponent(email)}`);
+            const response = await fetch(`${SERVICE_BASE}/api/user-id?email=${encodeURIComponent(email)}`);
             if (response.ok) {
                 const data = await response.json();
                 this.userId = data.user_id;
@@ -450,7 +456,7 @@ class ChatWidget {
             }
             console.log('Calling TTS with text:', text);
             this.typeText(text);
-            const ttsResponse = await fetch('https://vmentor.emg.edu.vn/synthesize/', {
+            const ttsResponse = await fetch(`${DOMAIN_BASE}/synthesize/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -507,7 +513,7 @@ class ChatWidget {
     async deleteAudioFile(audioUrl) {
         try {
             const filename = audioUrl.split('/').pop();
-            const deleteResponse = await fetch(`https://vmentor.emg.edu.vn/delete/${filename}`, {
+            const deleteResponse = await fetch(`${DOMAIN_BASE}/delete/${filename}`, {
                 method: 'DELETE'
             });
             
