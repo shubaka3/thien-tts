@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 os.makedirs("output", exist_ok=True)
-
+# --- Mount thư mục UI ---
 
 # Serve toàn bộ thư mục UI như static files
 app.mount("/ui", StaticFiles(directory="ui"), name="ui")
@@ -122,12 +122,12 @@ BASE_URL = "https://vmentor.emg.edu.vn/"
 # --- Schema ---
 class SynthesisRequest(BaseModel):
     text: str
-    voice: str = "guy"
+    voice: str = "nam"
 
 def resolve_voice(voice_name: str) -> str:
     """Chuyển voice ngắn thành voice đầy đủ EdgeTTS"""
     voice_name = voice_name.strip().lower()
-    return VOICE_MAP.get(voice_name, "en-US-GuyNeural")  # default nếu sai
+    return VOICE_MAP.get(voice_name, "vi-VN-NamMinhNeural")  # default nếu sai
 
 # --- API chính ---
 @app.post("/synthesize/")
@@ -146,7 +146,7 @@ async def synthesize(data: SynthesisRequest, request: Request):
         "audio_file": audio_url
     }
 
-# --- API demo ---
+# --- API demo -----
 @app.get("/demo/{voice}")
 async def demo(voice: str, request: Request):
     resolved_voice = resolve_voice(voice)

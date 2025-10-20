@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-Mentor AI (Merged)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #1a1a2e;
+            --primary-dark: rgba(22, 33, 62, 0.85);
+            --secondary-dark: rgba(15, 52, 96, 0.9);
+            --accent-color: #ff4757;
+            --text-light: #f5f6fa;
+            --text-muted: #a4b0be;
+            --path-node-locked: #576574;
+            --path-node-completed: #1dd1a1;
+            --path-node-current: #ffc312;
+            --path-line-color: rgba(255, 255, 255, 0.2);
+            --path-line-lit-color: #ffc312;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+
+        /* --- Screens --- */
+        .screen {
+            display: none;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        #login-screen { display: flex; } /* Show by default */
+
+        /* --- Login Screen --- */
+        #login-screen {
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .login-box {
+            background: var(--primary-dark);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--secondary-dark);
+        }
+
+        /* --- Dashboard Screen --- */
+        #dashboard-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        #dashboard-screen h1 {
+            margin-bottom: 40px;
+            text-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .course-card {
+            background: var(--primary-dark);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid var(--secondary-dark);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .course-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+        .course-card h4 { color: var(--text-light); }
+        .course-card p { color: var(--text-muted); font-size: 0.9em; }
+        .course-card.current {
+            border-color: var(--path-node-current);
+            box-shadow: 0 0 25px rgba(255, 195, 18, 0.4);
+        }
+        .course-card.current .current-tag {
+            color: var(--path-node-current);
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        /* --- App Screen --- */
+        #app-screen { backdrop-filter: blur(5px) brightness(0.8); }
+        .main-container { display: flex; height: 100%; }
+        
+        /* --- Learning Path Panel (3/7 width) --- */
+        .learning-path-panel {
+            flex: 3;
+            padding: 30px;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease-in-out;
+        }
+        
+        #learning-path-container {
+            position: relative;
+            width: 100%;
+            min-height: 1500px;
+        }
+
+        #progress-wave-container {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        #progress-wave {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%;
+            height: 0; /* Starts at 0, controlled by JS */
+            background: linear-gradient(to top, rgba(255, 195, 18, 0.2), rgba(29, 209, 161, 0.15), transparent 70%);
+            transition: height 2s cubic-bezier(0.25, 1, 0.5, 1); /* Smooth transition */
+        }
+        
+        .path-node {
+            position: absolute;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.5s ease;
+            border: 5px solid;
+            padding: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+
+        .path-node-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        
+        .path-node.locked {
+            background: linear-gradient(45deg, var(--path-node-locked), #3d4752);
+            border-color: #2f3640;
+            filter: grayscale(80%) blur(1px);
+        }
+        
+        .path-node.completed {
+            background: linear-gradient(45deg, var(--path-node-completed), #18a67c);
+            border-color: #107557;
+            transform: scale(1.05);
+        }
+        
+        .path-node.completed::after {
+            content: '\f00c'; /* Font Awesome check icon */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            color: white;
+            background: var(--path-node-completed);
+            border-radius: 50%;
+            border: 2px solid white;
+            /* Use fixed dimensions and flexbox for perfect circle and centering */
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .path-node.current {
+            background: linear-gradient(45deg, var(--path-node-current), #d6a00c);
+            border-color: #c0910b;
+            transform: scale(1.15);
+            box-shadow: 0 0 35px var(--path-node-current);
+            animation: pulse 1.8s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px var(--path-node-current); }
+            50% { box-shadow: 0 0 40px var(--path-node-current); }
+            100% { box-shadow: 0 0 20px var(--path-node-current); }
+        }
+
+        #path-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+        }
+
+        .path-line {
+            stroke: var(--path-line-color);
+            stroke-width: 10;
+            fill: none;
+            stroke-linecap: round;
+            transition: stroke 1s ease, stroke-width 1s ease;
+        }
+
+        .path-line.animated {
+            stroke: var(--path-line-lit-color);
+            animation: draw-line 2s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+        }
+        
+        .path-line.lit {
+            stroke: var(--path-node-completed);
+            stroke-width: 8;
+        }
+
+        @keyframes draw-line {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        /* --- Chat Panel (4/7 width) --- */
+        .chat-panel {
+            flex: 4;
+            display: flex;
+            flex-direction: column;
+            background: var(--primary-dark);
+            border-left: 1px solid var(--secondary-dark);
+            box-shadow: -5px 0 25px rgba(0,0,0,0.3);
+        }
+         #side-panel { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: var(--bg-dark); box-shadow: -10px 0 25px rgba(0,0,0,0.4); transition: right 0.4s ease-in-out; z-index: 1000; border-left: 1px solid var(--secondary-dark); display: flex; flex-direction: column; }
+        #side-panel.open { right: 0; }
+        .side-panel-header { padding: 10px 15px; border-bottom: 1px solid var(--secondary-dark); display: flex; justify-content: space-between; align-items: center; }
+        .side-panel-body { padding: 20px; overflow-y: auto; }
+        .message { display: flex; align-items: flex-end; margin-bottom: 15px; max-width: 85%;}
+        .message.user { margin-left: auto; flex-direction: row-reverse; }
+        .message.user .bubble { background: #0084ff; color: white; border-bottom-right-radius: 5px; }
+        .message.assistant .bubble { background: var(--secondary-dark); color: var(--text-light); border-bottom-left-radius: 5px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; margin: 0 10px; background: var(--secondary-dark); flex-shrink: 0; display:flex; align-items:center; justify-content:center; }
+        .bubble { padding: 12px 18px; border-radius: 20px; word-wrap: break-word; }
+        .chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; }
+        .chat-input { border-top: 1px solid var(--secondary-dark); padding: 15px; display: flex; gap: 10px; background: var(--bg-dark); }
+        .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--secondary-dark); background: var(--bg-dark); }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="screen">
+        <div class="login-box">
+             <h2><i class="fas fa-robot"></i> V-Mentor AI</h2>
+             <input type="email" class="form-control mb-3" id="email" placeholder="Email" value="test1@gmail.com">
+             <input type="password" class="form-control mb-3" id="password" placeholder="Mật khẩu" value="123">
+             <p id="login-error" class="text-danger"></p>
+             <button class="btn btn-primary w-100" onclick="handleLogin()">Đăng Nhập</button>
+        </div>
+    </div>
+    
+    <div id="dashboard-screen" class="screen">
+        <h1><i class="fas fa-book-open"></i> Chọn Khóa Học</h1>
+        <div class="course-grid" id="course-grid">
+            <!-- Course cards will be injected here -->
+        </div>
+    </div>
+
+    <div id="app-screen" class="screen">
+        <div class="main-container">
+            <div class="learning-path-panel" id="learning-path-panel">
+                 <h4 id="course-title" class="mb-4 text-white" style="text-shadow: 1px 1px 5px #000;"></h4>
+                 <div id="progress-wave-container"><div id="progress-wave"></div></div>
+                 <div id="learning-path-container">
+                     <svg id="path-svg"></svg>
+                 </div>
+            </div>
+
+            <div class="chat-panel">
+                 <div class="chat-header">
+                     <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-light" onclick="showDashboard()"><i class="fas fa-arrow-left"></i> Quay lại</button>
+                        <h5><i class="fas fa-comments ms-2"></i> Trợ lý AI</h5>
+                     </div>
+                     <div class="d-flex align-items-center gap-2">
+                         <span id="user-info" class="text-muted small"></span>
+                         <button class="btn btn-sm btn-outline-light" onclick="toggleSidePanel()"><i class="fas fa-cog"></i></button>
+                         <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i></button>
+                     </div>
+                 </div>
+                 <div id="messages" class="chat-messages"></div>
+                 <div class="chat-input">
+                     <input type="text" id="chatInput" class="form-control" placeholder="Nhập tin nhắn..." onkeydown="if(event.key === 'Enter') handleSend()">
+                     <button class="btn btn-primary" onclick="handleSend()"><i class="fas fa-paper-plane"></i></button>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="side-panel">
+        <div class="side-panel-header">
+            <h5 id="side-panel-title">Cài đặt</h5>
+            <button class="btn-close btn-close-white" onclick="toggleSidePanel()"></button>
+        </div>
+        <div class="side-panel-body" id="settings-view">
+            <div class="mb-3">
+                <label class="form-label">Chọn hình nền cho Lộ trình học</label>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-light flex-fill" onclick="applyBackground('https://i.pinimg.com/originals/6e/1a/c9/6e1ac970530da29e7f5d4c50/14ecb983.jpg?nii=t')">Vũ trụ</button>
+                    <button class="btn btn-sm btn-outline-light flex-fill" onclick="applyBackground('https://i.pinimg.com/736x/fd/90/43/fd904398637aad4e7a21c002305e82b3.jpg')">Thiên hà</button>
+                    <button class="btn btn-sm btn-outline-light flex-fill" onclick="applyBackground('https://i.pinimg.com/736x/a4/8a/02/a48a02715970cdf15ce1cefc20596150.jpg')">Cây</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- STATE MANAGEMENT & CONSTANTS ---
+    const state = {
+        userId: null, isLoggedIn: false, currentCourseId: null,
+        currentProgress: 1, courses: [], topics: [],
+    };
+    const API_BASE_URL = "https://workflow.emg.edu.vn:5678/webhook";
+    const DEFAULT_BG = 'https://i.pinimg.com/originals/6e/1a/c9/6e1ac970530da29e7f5d4c5014ecb983.jpg?nii=t';
+
+    // --- DOM Elements ---
+    const loginScreen = document.getElementById('login-screen');
+    const dashboardScreen = document.getElementById('dashboard-screen');
+    const appScreen = document.getElementById('app-screen');
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+        const storedUser = sessionStorage.getItem('vmentorUser');
+        if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            Object.assign(state, userData);
+        }
+
+        applyBackground(localStorage.getItem('vmentorBg') || DEFAULT_BG);
+
+        if (state.isLoggedIn) {
+            postLoginSetup();
+        }
+    };
+    
+    // --- API & AUTH ---
+    async function apiCall(endpoint, body, method = 'POST') {
+        try {
+            const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+                method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+            return await response.json();
+        } catch (error) { console.error(`Error calling ${endpoint}:`, error); return null; }
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const loginError = document.getElementById('login-error');
+        loginError.textContent = '';
+        
+        const response = await apiCall('VTV3-Login', { email, password });
+        
+        if (response && response.State) {
+            state.userId = response.UserId;
+            state.isLoggedIn = true;
+            sessionStorage.setItem('vmentorUser', JSON.stringify({ userId: state.userId, isLoggedIn: true }));
+            await postLoginSetup();
+        } else {
+            loginError.textContent = 'Đăng nhập thất bại. Vui lòng thử lại.';
+        }
+    }
+
+    function handleLogout() {
+        sessionStorage.clear();
+        localStorage.clear();
+        window.location.reload();
+    }
+    
+    async function postLoginSetup() {
+        document.getElementById('user-info').textContent = `User: ${state.userId}`;
+        try {
+            const courseResponse = await fetch(`${API_BASE_URL}/course-list`).then(res => res.json());
+            state.courses = (courseResponse && Array.isArray(courseResponse.ids)) ? courseResponse.ids : [];
+        } catch (error) { console.error("Failed to fetch course list:", error); }
+        
+        showDashboard();
+    }
+    
+    // --- SCREEN NAVIGATION & UI ---
+    function showDashboard() {
+        loginScreen.style.display = 'none';
+        appScreen.style.display = 'none';
+        dashboardScreen.style.display = 'flex';
+        renderCourseDashboard();
+    }
+    
+    async function handleCourseSelection(courseId) {
+        if (!courseId) return;
+
+        localStorage.setItem('vmentorCourseId', courseId);
+        state.currentCourseId = courseId;
+
+        // ALWAYS perform a clean reset when a course is selected from the dashboard.
+        // This ensures the state is fresh and animations work correctly every time.
+        document.getElementById('messages').innerHTML = '';
+        state.currentProgress = 1; 
+        state.topics = [];
+
+        dashboardScreen.style.display = 'none';
+        appScreen.style.display = 'block';
+
+        // UI Feedback for loading
+        const pathContainer = document.getElementById('learning-path-container');
+        pathContainer.innerHTML = `<div class="d-flex justify-content-center align-items-center h-100 text-white">
+                                       <div class="spinner-border" role="status">
+                                           <span class="visually-hidden">Loading...</span>
+                                       </div>
+                                   </div>`;
+        document.getElementById('course-title').textContent = 'Đang tải lộ trình...';
+
+        // Load data and then send initial messages
+        await loadCourseData(courseId);
+
+        addMessage('assistant', `You start lesson "${courseId}". let's study!`);
+        
+        sendHiddenReviewMessage();
+    }
+
+    function renderCourseDashboard() {
+        const grid = document.getElementById('course-grid');
+        grid.innerHTML = '';
+        const savedCourseId = localStorage.getItem('vmentorCourseId');
+
+        if (savedCourseId) {
+            const currentCourse = state.courses.find(c => c.id === savedCourseId);
+            if (currentCourse) {
+                 grid.appendChild(createCourseCard(currentCourse, true));
+            }
+        }
+
+        state.courses.forEach(course => {
+            if(course.id !== savedCourseId) {
+                grid.appendChild(createCourseCard(course, false));
+            }
+        });
+    }
+
+    function createCourseCard(course, isCurrent) {
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        if (isCurrent) card.classList.add('current');
+        card.onclick = () => handleCourseSelection(course.id);
+        
+        card.innerHTML = `
+            ${isCurrent ? '<p class="current-tag"><i class="fas fa-star"></i> Đang học</p>' : ''}
+            <h4>${course.id}</h4>
+            <p>Topics: ${course.topic}</p>
+        `;
+        return card;
+    }
+    
+    // --- COURSE & LEARNING PATH (Chat View) ---
+    async function loadCourseData(courseId) {
+        document.getElementById('learning-path-container').innerHTML = '<svg id="path-svg"></svg>';
+        const topicData = await apiCall('VTV3-TopicInCourse', { courseId });
+        state.topics = topicData ? topicData.AllTopic : [];
+        
+        const progressData = await apiCall('VTV3-CurrenProgress', { Userid: state.userId, CoursId: courseId });
+        state.currentProgress = progressData ? progressData.progress : 1;
+        
+        renderLearningPath();
+        document.getElementById('course-title').textContent = `Lộ trình học: ${courseId}`;
+    }
+
+    // MERGED: This function updates visuals with animations from V3
+    async function updateProgressVisuals() {
+        const progressData = await apiCall('VTV3-CurrenProgress', { Userid: state.userId, CoursId: state.currentCourseId });
+        if (!progressData) return;
+
+        const oldProgress = state.currentProgress;
+        const newProgress = progressData.progress;
+        
+        if (newProgress <= oldProgress) return; // No change or regression
+
+        state.currentProgress = newProgress;
+        
+        // Animate from old to new progress
+        for (let i = oldProgress + 1; i <= newProgress; i++) {
+            const prevNode = document.querySelector(`.path-node[data-progress='${i-1}']`);
+            const currNode = document.querySelector(`.path-node[data-progress='${i}']`);
+            const pathSegment = document.getElementById(`path-${i-1}-${i}`);
+
+            // Stagger animations for a step-by-step effect
+            setTimeout(() => {
+                if (prevNode) {
+                    prevNode.classList.remove('current', 'pulse');
+                    prevNode.classList.add('completed');
+                }
+                if (currNode) {
+                    currNode.classList.remove('locked');
+                    currNode.classList.add('current');
+                }
+                if (pathSegment) {
+                    pathSegment.classList.add('animated');
+                    pathSegment.addEventListener('animationend', () => {
+                         pathSegment.classList.remove('animated');
+                         pathSegment.classList.add('lit');
+                    }, { once: true });
+                }
+            }, (i - oldProgress - 1) * 800);
+        }
+
+        // Update the background wave effect
+        const wave = document.getElementById('progress-wave');
+        const totalTopics = state.topics.length;
+        if (wave && totalTopics > 0) {
+            const newHeight = (newProgress / totalTopics) * 100;
+            wave.style.height = `${newHeight}%`;
+        }
+    }
+
+
+    function renderLearningPath() {
+        const container = document.getElementById('learning-path-container');
+        const svg = document.getElementById('path-svg');
+        container.innerHTML = '';
+        container.appendChild(svg);
+        svg.innerHTML = '';
+        
+        if (!state.topics || state.topics.length === 0) return;
+
+        const pathCoords = [];
+        state.topics.forEach((topic, index) => {
+            const node = document.createElement('div');
+            node.className = 'path-node';
+            node.dataset.progress = topic.progress;
+            
+            const status = topic.progress < state.currentProgress ? 'completed' : (topic.progress === state.currentProgress ? 'current' : 'locked');
+            node.classList.add(status);
+
+            node.innerHTML = `<span class="path-node-title">${topic.title}</span>`;
+            
+            const x = 25 + (index % 2 === 0 ? 0 : 50) + (Math.random() - 0.5) * 10;
+            const y = 5 + index * 13;
+            node.style.left = `${x}%`;
+            node.style.top = `${y}%`;
+
+            container.appendChild(node);
+            pathCoords.push({ x: x + 5.5, y: y + 5.5});
+        });
+
+        for(let i = 1; i < pathCoords.length; i++) {
+             const p1 = pathCoords[i-1];
+             const p2 = pathCoords[i];
+             const cx = (p1.x + p2.x)/2 + (p2.x > p1.x ? -10:10);
+             const cy = (p1.y + p2.y)/2;
+             const pathD = `M ${p1.x}% ${p1.y}% S ${cx}% ${cy}% ${p2.x}% ${p2.y}%`;
+             
+             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+             path.setAttribute('d', pathD);
+             path.id = `path-${i}-${i+1}`;
+             path.classList.add('path-line');
+             
+             if (i < state.currentProgress) {
+                 path.classList.add('lit');
+             }
+             
+             svg.appendChild(path);
+             
+             const length = path.getTotalLength();
+             path.style.strokeDasharray = length;
+             path.style.strokeDashoffset = length;
+        }
+
+        const wave = document.getElementById('progress-wave');
+        const totalTopics = state.topics.length;
+        if (wave && totalTopics > 0) {
+            const initialHeight = (state.currentProgress / totalTopics) * 100;
+            wave.style.height = `${initialHeight}%`;
+        }
+    }
+    
+    // --- CHAT LOGIC ---
+    async function handleSend() {
+        const input = document.getElementById("chatInput");
+        const msg = input.value.trim();
+        if (!msg) return;
+        addMessage("user", msg);
+        input.value = "";
+        
+        const payload = {
+            messages: [{ role: "user", content: msg }],
+            sessionId: state.userId, course_id: state.currentCourseId
+        };
+        const chatResponse = await apiCall('VTV3', payload);
+        addMessage("assistant", chatResponse?.output || "Look like we done all topic & lesson!, great job! 🎉 now we can go to other lesson");
+        
+        await updateProgressVisuals();
+    }
+    
+    async function sendHiddenReviewMessage() {
+        // This function now always sends a review request when a course is entered.
+        const payload = {
+            messages: [{ role: "user", content: "I am back, let's review what we got" }],
+            sessionId: state.userId, course_id: state.currentCourseId, SessionFlag: "1"
+        };
+        const reviewResponse = await apiCall('VTV3', payload);
+        if(reviewResponse?.output) addMessage("assistant", reviewResponse.output);
+    }
+
+    function addMessage(role, text) {
+        const messagesBox = document.getElementById("messages");
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${role}`;
+        msgDiv.innerHTML = `<div class="avatar"><i class="fas ${role === 'user' ? 'fa-user' : 'fa-robot'}"></i></div><div class="bubble">${text.replace(/\n/g, '<br>')}</div>`;
+        messagesBox.appendChild(msgDiv);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    // --- UI CONTROLS ---
+    function toggleSidePanel() { document.getElementById('side-panel').classList.toggle('open'); }
+    
+    function applyBackground(url) {
+        if(!url) return;
+        document.getElementById('learning-path-panel').style.backgroundImage = `url('${url}')`;
+        localStorage.setItem('vmentorBg', url);
+    }
+</script>
+</body>
+</html>
+

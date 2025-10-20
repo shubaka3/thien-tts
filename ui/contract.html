@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Teacher Chat</title>
+    <!-- Sử dụng Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Thêm các hiệu ứng animation */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .animate-pulse-effect {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+    <!-- Thư viện Marked.js để render markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Thư viện Highlight.js để highlight code -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body class="bg-gray-100 h-screen flex justify-center items-center">
+
+<div class="app-container flex h-full w-full max-w-7xl mx-auto rounded-xl shadow-lg bg-white overflow-hidden">
+    <!-- Upload panel -->
+    <div id="uploadPanel" class="upload-panel w-1/4 max-w-xs bg-white border-r border-gray-200 flex flex-col transition-all duration-300 transform -translate-x-full md:translate-x-0 md:static absolute h-full z-20">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-gray-800">📂 Tải lên</h5>
+            <button class="text-gray-500 hover:text-gray-700 md:hidden" onclick="toggleUpload()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+            <div class="mb-4">
+                <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Chọn tệp (PDF, DOCX...)</label>
+                <input type="file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" id="fileInput" multiple>
+            </div>
+            <div class="mb-4">
+                <label for="docId" class="block text-sm font-medium text-gray-700 mb-1">ID tài liệu</label>
+                <input type="text" class="form-input w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm" id="docId" placeholder="Nhập Document ID">
+            </div>
+            <div class="mb-4 relative">
+                <button class="w-full bg-gray-200 text-gray-700 font-semibold py-2 rounded-md hover:bg-gray-300 transition-colors" onclick="togglePromptInput()">Thêm gợi ý kèm theo</button>
+                <textarea id="docPrompt" class="form-textarea w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm mt-2 hidden" placeholder="Ví dụ: Tóm tắt các ý chính" rows="3"></textarea>
+            </div>
+            <button class="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition-colors" onclick="handleUpload()">Tải lên</button>
+        </div>
+    </div>
+
+    <!-- Chat panel -->
+    <div class="chat-panel flex-1 flex flex-col bg-gray-50">
+        <div class="p-4 border-b border-gray-200 bg-white flex justify-between items-center sticky top-0 z-10">
+            <h5 id="chatTitle" class="text-lg font-semibold text-gray-800 transition-colors">💬 Chat với tài liệu</h5>
+            <div class="flex items-center gap-2">
+                <button class="bg-gray-100 text-gray-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-gray-200 transition-colors hidden md:block" onclick="toggleUpload()">📂 Tải lên</button>
+                <button class="bg-gray-100 text-gray-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-gray-200 transition-colors" onclick="toggleSetting()">⚙️ Cài đặt</button>
+                <button class="text-gray-500 hover:text-gray-700 md:hidden" onclick="toggleUpload()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Setting Box -->
+        <div id="settingBox" class="p-4 border-b border-gray-200 bg-gray-100 hidden fade-in">
+            <div class="mb-4">
+                <label for="sessionId" class="block text-sm font-medium text-gray-700 mb-1">ID Phiên</label>
+                <input type="text" class="form-input w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm" id="sessionId" placeholder="Session ID">
+            </div>
+            <div class="mb-4">
+                <label for="contractSelect" class="block text-sm font-medium text-gray-700 mb-1">Chọn Hợp Đồng</label>
+                <select id="contractSelect" class="form-select w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></select>
+            </div>
+            <div id="contractInfo" class="text-xs text-gray-500 mb-4 whitespace-pre-line"></div>
+            <button class="w-full bg-green-600 text-white font-semibold py-2 rounded-md hover:bg-green-700 transition-colors" onclick="saveSettings()">💾 Lưu Cài Đặt</button>
+        </div>
+
+        <div id="messages" class="chat-messages p-4 flex-1 overflow-y-auto space-y-4"></div>
+
+        <div class="chat-input p-4 border-t border-gray-200 bg-white flex items-center gap-2">
+            <input type="text" id="chatInput" class="form-input flex-1 border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Nhập tin nhắn..." onkeydown="if(event.key==='Enter') handleSend()">
+            <button class="bg-blue-600 text-white font-semibold w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors" onclick="handleSend()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 00.947 1.356L10 18.25l6.947 1.659a1 1 0 00.947-1.356l-7-14z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Start Button -->
+<button id="startBtn" class="fixed bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 hidden px-8 py-4 rounded-full bg-green-500 text-white font-bold text-lg shadow-xl hover:bg-green-600 transition-all animate-pulse-effect"
+        onclick="handleStart()">
+    ▶️ Bắt đầu Trò chuyện
+</button>
+
+<script>
+    // Config cho marked.js và highlight.js
+    marked.setOptions({
+        highlight: function(code, lang) {
+            try {
+                return hljs.highlight(code, { language: lang }).value;
+            } catch {
+                return hljs.highlightAuto(code).value;
+            }
+        }
+    });
+
+    // Chuyển đổi từ base64 sang ArrayBuffer
+    function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    // Chuyển đổi PCM sang WAV
+    function pcmToWav(pcmData, sampleRate) {
+        const view = new DataView(new ArrayBuffer(44 + pcmData.byteLength));
+        let offset = 0;
+
+        function writeString(str) {
+            for (let i = 0; i < str.length; i++) {
+                view.setUint8(offset + i, str.charCodeAt(i));
+            }
+            offset += str.length;
+        }
+
+        function writeUint32(val) {
+            view.setUint32(offset, val, true);
+            offset += 4;
+        }
+
+        function writeUint16(val) {
+            view.setUint16(offset, val, true);
+            offset += 2;
+        }
+
+        // RIFF chunk
+        writeString('RIFF');
+        writeUint32(36 + pcmData.byteLength);
+        writeString('WAVE');
+
+        // fmt chunk
+        writeString('fmt ');
+        writeUint32(16);
+        writeUint16(1); // PCM
+        writeUint16(1); // Mono
+        writeUint32(sampleRate);
+        writeUint32(sampleRate * 2); // Byte rate
+        writeUint16(2); // Block align
+        writeUint16(16); // Bits per sample
+
+        // data chunk
+        writeString('data');
+        writeUint32(pcmData.byteLength);
+
+        // PCM data
+        const pcmView = new Int16Array(pcmData);
+        for (let i = 0; i < pcmView.length; i++) {
+            view.setInt16(offset, pcmView[i], true);
+            offset += 2;
+        }
+
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    // Tạo ID phiên ngẫu nhiên khi tải trang
+    function generateSessionId() {
+        return 'sess-' + Math.random().toString(36).substring(2, 10);
+    }
+
+    window.onload = async function() {
+        const savedSessionId = localStorage.getItem("sessionId");
+        if (!savedSessionId) {
+            document.getElementById("sessionId").value = generateSessionId();
+        } else {
+            document.getElementById("sessionId").value = savedSessionId;
+        }
+        const savedContractID = localStorage.getItem("contractID") || "";
+        const uploadPanel = document.getElementById("uploadPanel");
+        
+        try {
+            const res = await fetch("https://workflow.emg.edu.vn:5678/webhook/hd-list");
+            const data = await res.json();
+            const select = document.getElementById("contractSelect");
+            select.innerHTML = "";
+            
+            data.contracts.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c["Mã hợp đồng"];
+                opt.textContent = `${c["Mã hợp đồng"]} - ${c["Số lượng tài liệu"]} tài liệu`;
+                if (c["Mã hợp đồng"] === savedContractID) {
+                    opt.selected = true;
+                    document.getElementById("contractInfo").textContent = c["Các Hợp đồng"];
+                    document.getElementById("startBtn").style.display = "block";
+                    // Ẩn panel tải lên nếu đã có hợp đồng
+                    uploadPanel.classList.add("-translate-x-full", "md:static");
+                }
+                select.appendChild(opt);
+            });
+
+            select.addEventListener("change", function() {
+                const selected = data.contracts.find(c => c["Mã hợp đồng"] === this.value);
+                document.getElementById("contractInfo").textContent = selected["Các Hợp đồng"];
+            });
+
+        } catch (err) {
+            console.error("❌ Lỗi tải danh sách hợp đồng", err);
+        }
+    };
+    
+    // Thêm tin nhắn vào khung chat
+    function addMessage(role, content) {
+        const messagesDiv = document.getElementById("messages");
+        const message = document.createElement("div");
+        message.className = `message flex items-start space-x-2 ${role === 'user' ? 'justify-end' : ''} fade-in`;
+        
+        if (role !== 'user') {
+            const avatar = document.createElement("div");
+            avatar.className = "w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0";
+            avatar.textContent = "AI";
+            message.appendChild(avatar);
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = `p-3 rounded-lg max-w-lg ${role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900'}`;
+        
+        // Render markdown content
+        bubble.innerHTML = marked.parse(content);
+
+        message.appendChild(bubble);
+
+        if (role === 'user') {
+            const avatar = document.createElement("div");
+            avatar.className = "w-8 h-8 rounded-full bg-gray-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0";
+            avatar.textContent = "Bạn";
+            message.appendChild(avatar);
+        }
+        
+        messagesDiv.appendChild(message);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Hiển thị trạng thái AI đang phản hồi
+    function showLoadingStatus(status) {
+        const chatTitle = document.getElementById("chatTitle");
+        chatTitle.textContent = status;
+        chatTitle.classList.add('text-gray-500');
+        chatTitle.classList.remove('text-gray-800');
+    }
+
+    // Ẩn trạng thái AI đang phản hồi
+    function hideLoadingStatus() {
+        const chatTitle = document.getElementById("chatTitle");
+        chatTitle.textContent = "💬 Chat với tài liệu";
+        chatTitle.classList.remove('text-gray-500');
+        chatTitle.classList.add('text-gray-800');
+    }
+
+    // Gửi tin nhắn
+    async function handleSend() {
+        const input = document.getElementById("chatInput");
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessage("user", message);
+        input.value = "";
+        
+        showLoadingStatus("🤖 AI đang phản hồi...");
+
+        const sessionId = localStorage.getItem("sessionId");
+        const contractID = localStorage.getItem("contractID");
+
+        try {
+            const res = await fetch("https://workflow.emg.edu.vn:5678/webhook/hd-asking", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [{ role: "user", content: message }],
+                    sessionId: sessionId,
+                    contract_id: contractID
+                })
+            });
+            const data = await res.json();
+            const reply = data.output ? data.output : "❌ Không có dữ liệu trả về";
+            addMessage("assistant", reply);
+        } catch (err) {
+            addMessage("assistant", "❌ Lỗi server!");
+            console.error(err);
+        } finally {
+            hideLoadingStatus();
+        }
+    }
+
+    // Xử lý nút bắt đầu
+    async function handleStart() {
+        document.getElementById("startBtn").style.display = "none";
+        showLoadingStatus("🤖 AI đang phản hồi...");
+        const sessionId = localStorage.getItem("sessionId");
+        const contractID = localStorage.getItem("contractID");
+        try {
+            const res = await fetch("https://workflow.emg.edu.vn:5678/webhook/hd-asking", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [{ role: "user", content: "bắt đầu" }],
+                    sessionId: sessionId,
+                    contract_id: contractID
+                })
+            });
+            const data = await res.json();
+            const reply = data.output ? data.output : "❌ Không có dữ liệu trả về";
+            addMessage("assistant", reply);
+        } catch (err) {
+            addMessage("assistant", "❌ Lỗi server!");
+            console.error(err);
+        } finally {
+            hideLoadingStatus();
+        }
+    }
+
+    // Hàm show/hide panel tải lên
+    function toggleUpload() {
+        const panel = document.getElementById("uploadPanel");
+        panel.classList.toggle("-translate-x-full");
+    }
+
+    // Hàm show/hide cài đặt
+    function toggleSetting() {
+        const box = document.getElementById("settingBox");
+        box.classList.toggle("hidden");
+    }
+
+    // Hàm show/hide prompt input
+    function togglePromptInput() {
+        const input = document.getElementById("docPrompt");
+        input.classList.toggle("hidden");
+    }
+
+    // Hàm lưu cài đặt
+    function saveSettings() {
+        const sessionId = document.getElementById("sessionId").value;
+        const contractID = document.getElementById("contractSelect").value;
+        localStorage.setItem("sessionId", sessionId);
+        localStorage.setItem("contractID", contractID);
+        // Thay thế alert bằng một thông báo tùy chỉnh
+        showNotification("✅ Đã lưu cài đặt!", "success");
+        document.getElementById("settingBox").classList.add("hidden");
+        document.getElementById("startBtn").style.display = "block";
+        
+        // Ẩn bảng tải lên sau khi lưu cài đặt thành công
+        const uploadPanel = document.getElementById("uploadPanel");
+        uploadPanel.classList.add("-translate-x-full", "md:static");
+    }
+
+    // Tải lên nhiều file
+    async function handleUpload() {
+        const fileInput = document.getElementById("fileInput");
+        const docId = document.getElementById("docId").value;
+        let prompt = document.getElementById("docPrompt").value.trim();
+
+        if (!fileInput.files.length || !docId) {
+            showNotification("Vui lòng chọn tệp và nhập ID tài liệu!", "warning");
+            return;
+        }
+        
+        // Nếu prompt rỗng, gán giá trị mặc định
+        if (!prompt) {
+            prompt = `Bạn là một chuyên gia pháp lý có nhiều kinh nghiệm tư vấn và soạn thảo hợp đồng.
+
+Nhiệm vụ: Đọc kỹ toàn văn một hoặc nhiều hợp đồng (có thể có tiêu đề hoặc ký hiệu -- No Title --). Phân tích các hợp đồng này dưới góc nhìn của bên Emg Education và trả lời ngắn gọn, súc tích, nhưng có dẫn chứng cụ thể từ nội dung hợp đồng.
+
+Bắt buộc phải trả lời theo đúng 4 mục sau:
+
+Chi phí & Thời điểm thanh toán
+
+Emg Education phải trả bao nhiêu, theo đơn vị gì (USD, VND), quy đổi thế nào, thanh toán khi nào.
+
+Nếu có điểm chưa rõ ràng hoặc bất lợi thì chỉ rõ.
+
+Hiệu lực hợp đồng
+
+Ngày bắt đầu, ngày kết thúc, điều kiện có hiệu lực.
+
+Nếu có điều khoản tự động gia hạn, chấm dứt hay điều kiện mơ hồ thì phải nêu.
+
+Rủi ro & Bất lợi cho Emg Education
+
+Liệt kê rõ điều khoản nào gây rủi ro (ví dụ: tỷ giá, bất khả kháng, dữ liệu, hoàn phí, giới hạn trách nhiệm).
+
+Giải thích rủi ro thực tế nếu điều khoản đó xảy ra.
+
+Thiếu sót hoặc “bẫy” tiềm ẩn
+
+Những điểm có thể khiến Emg Education chịu thiệt hại về sau (ví dụ: điều khoản không cân xứng, nghĩa vụ không rõ, quyền lợi bị hạn chế).
+
+
+Yêu cầu bắt buộc:
+
+Mỗi mục phải có: phát hiện chính → rủi ro.
+
+Phải trích dẫn hoặc dẫn chứng bằng số điều khoản, đoạn văn bản cụ thể.
+
+Nếu có nhiều hợp đồng, phải phân tích từng hợp đồng riêng biệt trước, sau đó mới đưa ra nhận xét tổng hợp.
+
+Trình bày rõ ràng, đánh số mục như đề bài. Không viết lan man.`;
+        }
+
+        const formData = new FormData();
+        for (let file of fileInput.files) {
+            formData.append("files", file);
+        }
+        formData.append("id", docId);
+        formData.append("prompt", prompt); // Luôn gửi prompt, kể cả khi là mặc định
+
+        try {
+            const res = await fetch("https://workflow.emg.edu.vn:5678/webhook/hd-upload", {
+                method: "POST",
+                body: formData
+            });
+            if (res.ok) {
+                showNotification("✅ Tải lên thành công!", "success");
+                toggleUpload(); // Đóng panel sau khi tải lên thành công
+                location.reload(); // reload lại trang
+            } else {
+                showNotification("❌ Tải lên thất bại!", "error");
+            }
+        } catch (err) {
+            showNotification("❌ Lỗi kết nối máy chủ!", "error");
+            console.error(err);
+        }
+    }
+
+    // Hiển thị thông báo tùy chỉnh (thay thế alert)
+    function showNotification(message, type) {
+        const appContainer = document.querySelector('.app-container');
+        const notification = document.createElement('div');
+        notification.className = `fixed top-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white font-semibold transition-all duration-300 opacity-0 z-50`;
+        if (type === 'success') {
+            notification.classList.add('bg-green-500');
+        } else if (type === 'error') {
+            notification.classList.add('bg-red-500');
+        } else if (type === 'warning') {
+            notification.classList.add('bg-yellow-500');
+        }
+        notification.textContent = message;
+        appContainer.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '1';
+        }, 100);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 3000);
+    }
+</script>
+
+</body>
+</html>

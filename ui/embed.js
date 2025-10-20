@@ -39,7 +39,7 @@
     // Use an <img> tag for the chat bubble icon
     var chatIcon = document.createElement('img');
     chatIcon.id = 'chatBubbleIcon';
-    chatIcon.src = 'https://elearning.emg.edu.vn/theme/emgelementary/pix/login/logo.png'; // New icon path
+    chatIcon.src = 'https://cdn-icons-png.flaticon.com/512/18356/18356731.png'; // New icon path
     chatIcon.style.cssText = `
         width: 100%;
         height: 100%;
@@ -70,8 +70,8 @@
         position: fixed;
         bottom: 90px;
         right: 20px;
-        width: 350px;
-        height: 500px;
+        width: 500px;
+        height: 700px;
         border: none;
         border-radius: 15px;
         box-shadow: 0 8px 25px rgba(0,0,0,0.3);
@@ -116,7 +116,7 @@
             }, 300); // Match this with your CSS transition duration
             
             // Change icon back to the chat bubble logo
-            chatIcon.src = 'https://elearning.emg.edu.vn/theme/emgelementary/pix/login/logo.png';
+            chatIcon.src = 'https://cdn-icons-png.flaticon.com/512/18356/18356731.png';
             chatIcon.style.padding = '8px'; // Revert padding for logo
             chatIcon.style.objectFit = 'contain'; // Revert object-fit for logo
             
@@ -145,8 +145,8 @@
             chatIframe.style.left = '20px';
             chatIframe.style.bottom = '90px';
         } else {
-            chatIframe.style.width = '350px';
-            chatIframe.style.height = '500px';
+            chatIframe.style.width = '500px';
+            chatIframe.style.height = '700px';
             chatIframe.style.right = '20px';
             chatIframe.style.left = 'auto';
             chatIframe.style.bottom = '90px';

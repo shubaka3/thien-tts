@@ -13,9 +13,15 @@ function unlockAudioPlayback() {
     if (audioUnlocked) return;
 
     const silentAudio = new Audio();
+
+    // ✅ Phương án 1: dùng file local (nếu có)
     silentAudio.src = "https://vmentor.emg.edu.vn/ui/audio.mp3";
+
+    // Nếu load file thất bại → fallback về base64
     silentAudio.onerror = () => {
         console.warn("⚠️ Failed to load external audio. Falling back to base64 silent audio.");
+
+        // ✅ Phương án 2: dùng base64 (silent)
         silentAudio.src = "data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAA==";
         silentAudio.play().then(() => {
             console.log("🔓 Audio unlocked via fallback");
@@ -24,6 +30,8 @@ function unlockAudioPlayback() {
             console.warn("🔒 Unlock failed on fallback", e);
         });
     };
+
+    // Cố gắng play file silent (ui/audio.mp3)
     silentAudio.play().then(() => {
         console.log("🔓 Audio unlocked");
         audioUnlocked = true;
@@ -67,9 +75,10 @@ class ChatWidget {
 
     async init() {
         await this.getUserId();
-        await this.getStartText();
-        this.renderInitialMessage();
+        await this.getStartText();  // ✅ fetch start_text sau khi có userId
+        this.renderInitialMessage(); // ✅ render ra UI
         this.bindEvents();
+        // this.setupLanguageSelector();
         this.setupModeSwitcher();
         this.setupSpeechRecognition();
         this.setupVoiceVisualizer();
@@ -128,6 +137,7 @@ class ChatWidget {
             if (e.key === 'Enter') this.sendMessage();
         });
         document.getElementById('voice-record-btn').addEventListener('click', async () => {
+            // Bắt buộc kích hoạt AudioContext (vì context chưa resume nên bị chặn autoplay)
             if (this.audioCtx && this.audioCtx.state === 'suspended') {
                 await this.audioCtx.resume();
                 console.log('🔊 AudioContext resumed on user interaction');
@@ -150,6 +160,7 @@ class ChatWidget {
         const messageInput = document.getElementById('message-input');
 
         langButtons.forEach(button => {
+            // Xóa sự kiện cũ bằng cách replace node
             const newBtn = button.cloneNode(true);
             button.parentNode.replaceChild(newBtn, button);
 
@@ -174,15 +185,6 @@ class ChatWidget {
         });
     }
 
-    // ✨ THÊM VÀO: Hàm helper để ẩn/hiện tất cả tin nhắn
-    updateMessageVisibility() {
-        const allMessages = document.querySelectorAll('#chat-box .message-wrapper');
-        allMessages.forEach(msg => {
-            // Nếu đang ở voice mode, ẩn đi. Ngược lại, hiện ra (dùng 'flex' vì message-wrapper là flexbox)
-            msg.style.display = this.isVoiceMode ? 'none' : 'flex';
-        });
-    }
-
     setupModeSwitcher() {
         const modeToggle = document.getElementById('mode-toggle');
         const textInputArea = document.getElementById('text-input-area');
@@ -200,26 +202,25 @@ class ChatWidget {
                 voiceModeInterface.classList.remove('active');
                 this.stopVoiceVisualizer();
             }
-            // ✨ THÊM VÀO: Cập nhật hiển thị tin nhắn mỗi khi chuyển mode
-            this.updateMessageVisibility();
         });
     }
 
     switchToTextMode() {
+        // Stop any ongoing recording
         if (this.isRecording) {
             this.stopVoiceRecording();
         }
         
+        // Switch back to text mode
         this.isVoiceMode = false;
         document.getElementById('mode-toggle').checked = false;
         document.getElementById('text-input-area').style.display = 'block';
         document.getElementById('voice-mode-interface').classList.remove('active');
         this.stopVoiceVisualizer();
-        // ✨ THÊM VÀO: Cập nhật hiển thị tin nhắn khi back về text mode
-        this.updateMessageVisibility();
     }
 
     setupVoiceVisualizer() {
+        // Initialize audio context for visualizer
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         this.analyser = this.audioCtx.createAnalyser();
         this.analyser.fftSize = 128;
@@ -270,7 +271,9 @@ class ChatWidget {
             const energy = average * 0.25 + 15;
 
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
             const t = performance.now() * 0.001;
+
             this.drawSmoothBlob(this.centerX, this.centerY, this.baseRadius + energy, 6, "0,255,238", 0.4, 1.5, t * 0.3);
             this.drawSmoothBlob(this.centerX, this.centerY, this.baseRadius + 25 + energy * 0.4, 10, "0,255,238", 0.25, 1.2, -t * 0.5);
             this.drawSmoothBlob(this.centerX, this.centerY, this.baseRadius + 45 + energy * 0.3, 14, "0,255,238", 0.15, 0.9, t * 0.2);
@@ -308,7 +311,10 @@ class ChatWidget {
             document.getElementById('voice-record-btn').classList.add('recording');
             document.getElementById('voice-stop-btn').style.display = 'inline-block';
             document.getElementById('voice-record-btn').style.display = 'none';
+            
+            // Play start sound
             this.voiceStartSound.play().catch(e => console.log('Sound play failed:', e));
+            
             console.log("Voice recognition started. Speak now. Click stop to end.");
         };
 
@@ -352,6 +358,7 @@ class ChatWidget {
             this.stopVoiceRecording();
         } else {
             try {
+                // Try to get microphone permission first
                 await navigator.mediaDevices.getUserMedia({ audio: true });
                 this.recognition.start();
             } catch(e) {
@@ -365,6 +372,8 @@ class ChatWidget {
     stopVoiceRecording() {
         if (this.recognition && this.isRecording) {
             this.recognition.stop();
+            
+            // Play stop sound
             this.voiceStopSound.play().catch(e => console.log('Sound play failed:', e));
             
             setTimeout(() => {
@@ -389,10 +398,9 @@ class ChatWidget {
         this.showTyping(true);
         try {
             console.log('Sending message to API:', message);
-            // ✨ SỬA ĐỔI: Tắt hoàn toàn chế độ stream
-            const streamValue = false;
+            // Always use stream: false in voice mode, true in text mode
+            const streamValue = this.isVoiceMode ? false : true;
             console.log('stream param:', streamValue);
-            
             const response = await fetch('https://vmentor-service.emg.edu.vn/api/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -411,11 +419,13 @@ class ChatWidget {
             });
             this.showTyping(false);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
-            // Vì stream đã tắt, chúng ta chỉ cần xử lý response JSON thông thường
-            const data = await response.json();
-            await this.handleChatResponse(data);
-
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/event-stream')) {
+                await this.handleStreamingResponse(response);
+            } else {
+                const data = await response.json();
+                await this.handleChatResponse(data);
+            }
         } catch (error) {
             this.showTyping(false);
             console.error('Error:', error);
@@ -426,16 +436,67 @@ class ChatWidget {
             input.focus();
         }
     }
-    
-    // Hàm này không còn cần thiết khi stream: false, nhưng giữ lại không ảnh hưởng
+
     async handleStreamingResponse(response) {
-        // ... code cũ của bạn có thể giữ ở đây ...
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let botMessageContent = '';
+        let messageElement = this.appendMessage('', 'bot', true);
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); 
+
+            for (const line of lines) {
+                if (line.trim().startsWith('data: ')) {
+                    const data = line.trim().substring(6);
+                    if (data === '[DONE]') continue;
+                    
+                    try {
+                        // Handle different response formats
+                        if (data.startsWith('{')) {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.choices?.[0]?.delta?.content || 
+                                           parsed.answer || 
+                                           parsed.content || 
+                                           '';
+                            if (content) {
+                                botMessageContent += content;
+                                this.updateMessage(messageElement, botMessageContent);
+                            }
+                        } else if (data.trim()) {
+                            // Handle plain text responses
+                            botMessageContent += data;
+                            this.updateMessage(messageElement, botMessageContent);
+                        }
+                    } catch (err) {
+                        console.error('JSON parse error:', data, err);
+                        // If JSON parsing fails, treat as plain text
+                        if (data.trim() && !data.includes('data:')) {
+                            botMessageContent += data;
+                            this.updateMessage(messageElement, botMessageContent);
+                        }
+                    }
+                }
+            }
+        }
+
+        // After streaming is complete, handle TTS if in voice mode
+        if (this.isVoiceMode && botMessageContent.trim()) {
+            await this.handleTTS(botMessageContent);
+        }
     }
 
     async handleChatResponse(data) {
         const botMessage = data.answer || data.choices?.[0]?.message?.content || data.content || data.output || JSON.stringify(data);
         this.appendMessage(botMessage, 'bot');
         console.log(data.content)
+        // Handle TTS if in voice mode
         if (this.isVoiceMode && botMessage.trim()) {
             console.log('Handling TTS for voice mode', botMessage);
             await this.handleTTS(botMessage);
@@ -488,7 +549,9 @@ class ChatWidget {
             this.source.connect(this.analyser);
             this.analyser.connect(this.audioCtx.destination);
 
-            this.audio.onended = () => resolve();
+            this.audio.onended = () => {
+                resolve();
+            };
             this.audio.onerror = (error) => {
                 console.error('Audio playback error:', error);
                 reject(error);
@@ -528,7 +591,7 @@ class ChatWidget {
 
         const avatar = document.createElement('img');
         avatar.className = 'avatar';
-        avatar.src = type === "bot" 
+         avatar.src = type === "bot" 
             ? (this.config.AVATAR_BOT_URL || "https://static.vecteezy.com/system/resources/previews/007/225/199/non_2x/robot-chat-bot-concept-illustration-vector.jpg") 
             : (this.config.AVATAR_USER_URL || "https://static.vecteezy.com/system/resources/thumbnails/004/607/791/small_2x/man-face-emotive-icon-smiling-male-character-in-blue-shirt-flat-illustration-isolated-on-white-happy-human-psychological-portrait-positive-emotions-user-avatar-for-app-web-design-vector.jpg");
         avatar.alt = type;
@@ -543,11 +606,6 @@ class ChatWidget {
             msgWrapper.style.flexDirection = 'row-reverse';
         }
 
-        // ✨ THÊM VÀO: Ẩn tin nhắn ngay khi tạo nếu đang ở voice mode
-        if (this.isVoiceMode) {
-            msgWrapper.style.display = 'none';
-        }
-
         chatBox.appendChild(msgWrapper);
         
         if (isStreaming) {
@@ -560,10 +618,6 @@ class ChatWidget {
         return msgWrapper;
     }
 
-    // --- KHÔNG THAY ĐỔI ---
-    // Khối code từ updateMessage đến hết file giữ nguyên như trong Canvas của bạn
-    // Tôi sẽ sao chép nó vào đây để đảm bảo file hoàn chỉnh
-    
     updateMessage(messageElement, content) {
         const messageDiv = messageElement.querySelector('.message');
         if (!messageDiv) return;
@@ -658,6 +712,8 @@ class ChatWidget {
     escapeForJs(text) {
         return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     }
+
+
 
     showTyping(show) {
         const indicator = document.getElementById('typing-indicator');

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-Mentor AI (Merged)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div id="login-screen" class="screen">
+        <div class="login-box">
+             <h2><i class="fas fa-robot"></i> V-Mentor AI</h2>
+             <input type="email" class="form-control mb-3" id="email" placeholder="Email" value="sontran@gmail.com">
+             <input type="password" class="form-control mb-3" id="password" placeholder="Mật khẩu" value="123">
+             <p id="login-error" class="text-danger"></p>
+             <button class="btn btn-primary w-100" onclick="handleLogin()">Đăng Nhập</button>
+        </div>
+    </div>
+    <div id="dashboard-screen" class="screen">
+        <!-- <h1><i class="fas fa-book-open"></i> Chọn Khóa Học</h1>
+        <button class="btn btn-primary" onclick="showCreateCourseModal()"><i class="fas fa-plus"></i> Tạo Khóa Học</button> -->
+        <div class="dashboard-header">
+            <h1><i class="fas fa-book-open"></i> Chọn Khóa Học</h1>
+            <button class="btn btn-primary" onclick="showCreateCourseModal()"><i class="fas fa-plus"></i> Tạo Khóa Học</button>
+        </div>
+        <div class="course-grid" id="course-grid">
+            <!-- Course cards will be injected here -->
+        </div>
+    </div>
+
+    <div id="app-screen" class="screen">
+        <div class="main-container">
+            <div class="learning-path-panel" id="learning-path-panel">
+                 <h4 id="course-title" class="mb-4 text-white" style="text-shadow: 1px 1px 5px #000;"></h4>
+                 <div id="progress-wave-container"><div id="progress-wave"></div></div>
+                 <div id="learning-path-container">
+                     <svg id="path-svg"></svg>
+                 </div>
+            </div>
+
+            <div class="chat-panel">
+                 <div class="chat-header">
+                     <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-light" onclick="showDashboard()"><i class="fas fa-arrow-left"></i> Quay lại</button>
+                        <h5><i class="fas fa-comments ms-2"></i> Trợ lý AI</h5>
+                     </div>
+                     <div class="d-flex align-items-center gap-2">
+                         <span id="user-info" class="text-muted small"></span>
+                         <button class="btn btn-sm btn-outline-light" onclick="toggleSidePanel()"><i class="fas fa-cog"></i></button>
+                         <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i></button>
+                     </div>
+                 </div>
+                 <div id="messages" class="chat-messages"></div>
+                 <!-- <div class="chat-input">
+                     <input type="text" id="chatInput" class="form-control" placeholder="Nhập tin nhắn..." onkeydown="if(event.key === 'Enter') handleSend()">
+                     <button class="btn btn-primary" onclick="handleSend()"><i class="fas fa-paper-plane"></i></button>
+                 </div> -->
+                <div id="chat-suggestions" class="d-flex gap-2 px-3 pb-2">
+                    <button class="btn btn-sm btn-vang" onclick="sendSuggestion('vâng ạ')">vâng ạ</button>
+                    <button class="btn btn-sm btn-tieptuc" onclick="sendSuggestion('tiếp tục')">tiếp tục</button>
+                    <button class="btn btn-sm btn-chuahieu" onclick="sendSuggestion('chưa hiểu rõ')">chưa hiểu rõ</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="sendSuggestion('em đã hiểu, thầy tiếp tục nhé')">em đã hiểu, thầy tiếp tục nhé</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="sendSuggestion('em cần dạy chi tiết hơn')">em cần dạy chi tiết hơn</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="sendSuggestion('Em không biết đáp án ạ')">Em không biết đáp án ạ</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="sendSuggestion('Em chưa hiểu, thầy giải bài giúp em ạ')">Em chưa hiểu, thầy giải bài giúp em ạ</button>
+                </div>
+                 <div class="chat-input">
+                    <input type="text" id="chatInput" class="form-control" placeholder="Nhập tin nhắn..." onkeydown="if(event.key === 'Enter') handleSend()">
+                    <button class="btn btn-primary" onclick="handleSend()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <!-- Thêm gợi ý chat -->
+
+            </div>
+        </div>
+    </div>
+    
+    <div id="side-panel">
+        <div class="side-panel-header">
+            <h5 id="side-panel-title">Cài đặt</h5>
+            <button class="btn-close btn-close-white" onclick="toggleSidePanel()"></button>
+        </div>
+        <div class="side-panel-body" id="settings-view">
+            <div class="mb-3">
+                <label class="form-label">Chọn hình nền cho Lộ trình học</label>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-light flex-fill" onclick="applyBackground('https://i.pinimg.com/originals/6e/1a/c9/6e1ac970530da29e7f5d4c50/14ecb983.jpg?nii=t')">Vũ trụ</button>
+                    <button class="btn btn-sm btn-outline-light flex-fill" onclick="applyBackground('https://i.pinimg.com/736x/fd/90/43/fd904398637aad4e7a21c002305e82b3.jpg')">Thiên hà</button>
+                    <button class="btn btn-sm btn-outline-light flex-fill" onclick="applyBackground('https://i.pinimg.com/736x/a4/8a/02/a48a02715970cdf15ce1cefc20596150.jpg')">Cây</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME UI -->
+    <div id="game-prompt-overlay" class="game-overlay" style="display: none;">
+        <div class="game-prompt-box">
+            <h4><i class="fas fa-gamepad"></i> Game Ẩn!</h4>
+            <p>Phát hiện Topic có game ẩn, em có muốn trải nghiệm không?</p>
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <button id="decline-game-btn" class="btn btn-secondary">Từ chối</button>
+                <button id="accept-game-btn" class="btn btn-primary">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-main-overlay" class="game-overlay" style="display: none;">
+        <div id="edu-game-wrapper">
+            <div class="game-header">
+                 <h5 id="game-title"><i class="fas fa-puzzle-piece"></i> Mini Game</h5>
+                 <button id="close-game-btn" class="btn-close btn-close-white"></button>
+             </div>
+             <main id="edu-game-main-content">
+                <!-- Game 1: Fill in the Blank -->
+                <div id="edu-game-container-fillblank" class="edu-game-container">
+                    <p class="edu-game-prompt">Điền vào chỗ trống và nhấn "Kiểm Tra".</p>
+                    <div id="edu-game-fillblank-sentence"></div>
+                    <input type="text" id="edu-game-fillblank-input" placeholder="Câu trả lời của bạn">
+                    <div class="edu-game-feedback" id="edu-game-fillblank-feedback"></div>
+                    <div class="edu-game-controls">
+                        <button id="edu-game-fillblank-check-btn" class="btn btn-info">Kiểm Tra</button>
+                    </div>
+                </div>
+                
+                <!-- Game 2: Multiple Choice -->
+                <div id="edu-game-container-multiplechoice" class="edu-game-container">
+                    <p class="edu-game-prompt" id="edu-game-multiplechoice-question"></p>
+                    <div id="edu-game-multiplechoice-options"></div>
+                    <div class="edu-game-feedback" id="edu-game-multiplechoice-feedback"></div>
+                    <div id="edu-game-multiplechoice-explanation" style="display:none;"></div>
+                    <div class="edu-game-controls">
+                        <button id="edu-game-multiplechoice-next-btn" class="btn btn-info" style="display:none;">Tiếp theo</button>
+                    </div>
+                </div>
+                
+                <!-- Final Score Screen (shared) -->
+                <div id="edu-game-final-score-container">
+                    <h2>Hoàn thành!</h2>
+                    <p>Điểm của bạn: <span id="edu-game-final-score"></span></p>
+                    <p id="edu-game-final-feedback"></p>
+                    <button id="edu-game-restart-btn" class="btn btn-primary">Chơi lại</button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<div id="create-course-modal" class="game-overlay" style="display: none;">
+    <div class="game-prompt-box" style="max-width: 500px;">
+        <h4><i class="fas fa-cloud-upload-alt"></i> Tạo Khóa Học Mới</h4>
+        <form id="create-course-form" class="mt-3">
+            <div class="mb-3 text-start">
+                <label for="courseName" class="form-label">Tên Khóa Học</label>
+                <input type="text" class="form-control" id="courseName" placeholder="Ví dụ: Lịch sử Việt Nam" required>
+            </div>
+             <!-- <div class="mb-3 text-start">
+                <label for="courseDescription" class="form-label">Mô Tả</label>
+                <textarea class="form-control" id="courseDescription" rows="3" placeholder="Mô tả ngắn về khóa học..."></textarea>
+            </div> -->
+
+            
+            <div class="mb-3 text-start">
+                <label for="courseLanguage" class="form-label">Học bằng ngôn ngữ?</label>
+                <select class="form-select" id="courseLanguage" required>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="mb-3 text-start">
+                <label for="courseLanguage" class="form-label">Số chủ đề muốn tạo từ tài liệu</label>
+                <input type="number" class="form-control" id="courseTopicNumber" placeholder="4" required>
+
+            </div>
+
+            <div class="mb-3 text-start">
+                <label for="courseGrade" class="form-label">Khối Lớp</label>
+                <select class="form-select" id="courseGrade" required>
+                    <!-- Options 1-12 will be generated by JS -->
+                </select>
+            </div>
+            <div class="mb-3 text-start">
+                 <label for="courseFile" class="form-label">Tệp Nội Dung (.txt)</label>
+                 <input type="file" class="form-control" id="courseFile" accept=".txt, text/plain" required>
+            </div>
+
+            <!-- PASTE THE CODE BELOW HERE -->
+            <div class="progress mt-3" id="upload-progress-container" style="display: none; height: 25px; font-size: 1em;">
+                <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+            <!-- END OF PASTE -->
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <button type="button" class="btn btn-secondary" onclick="hideCreateCourseModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary">Tải Lên</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="scripts.js?v=1.0.0" ></script>
+</body>
+</html>

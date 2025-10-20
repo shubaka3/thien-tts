@@ -1,0 +1,16 @@
+{
+  "accounts": [
+    {
+      "email": "hanguyen@emg.vn",
+      "password": "Emg@2025"
+    },
+    {
+      "email": "admin@gmail.com",
+      "password": "123"
+    },
+    {
+      "email": "son@gmail.com",
+      "password": "123"
+    }
+  ]
+}

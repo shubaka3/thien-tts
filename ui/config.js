@@ -9,7 +9,7 @@ window.APP_CONFIG = {
     CHAT_IFRAME_URL: 'http://vmentor.emg.edu.vn/chat-widget.html',
     
     // Avatar URLs
-    AVATAR_BOT_URL: 'https://digital.com.vn/wp-content/uploads/2025/03/ai-bot.jpg',
+    AVATAR_BOT_URL: 'https://static.vecteezy.com/system/resources/previews/007/225/199/non_2x/robot-chat-bot-concept-illustration-vector.jpg',
     AVATAR_USER_URL: 'https://static.vecteezy.com/system/resources/thumbnails/004/607/791/small_2x/man-face-emotive-icon-smiling-male-character-in-blue-shirt-flat-illustration-isolated-on-white-happy-human-psychological-portrait-positive-emotions-user-avatar-for-app-web-design-vector.jpg',
     // thêm để update
     // UI Colors

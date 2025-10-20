@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDDC Real-time Plant Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6; /* Blue 500 */
+            --bg-color: #111827; /* Gray 900 */
+            --card-color: #1f2937; /* Gray 800 */
+            --border-color: #374151; /* Gray 700 */
+            --text-primary: #f9fafb; /* Gray 50 */
+            --text-secondary: #d1d5db; /* Gray 300 */
+            --danger-color: #ef4444; /* Red 500 */
+            --success-color: #22c55e; /* Green 500 */
+            --info-ring-color: rgba(255, 255, 255, 0.8);
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .card {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover:not(:disabled) { filter: brightness(1.15); }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-danger:hover:not(:disabled) { filter: brightness(1.15); }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-success:hover:not(:disabled) { filter: brightness(1.15); }
+        .btn-secondary { background-color: #4b5563; color: white; }
+        .btn-secondary:hover:not(:disabled) { background-color: #6b7280; }
+
+        .form-input {
+            background-color: #374151;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--primary-color);
+        }
+
+        /* Loader */
+        .loader-overlay {
+            position: fixed; inset: 0; background-color: rgba(0,0,0,0.7);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+        }
+        .loader-spinner {
+            width: 50px; height: 50px; border: 5px solid #fff;
+            border-bottom-color: var(--primary-color);
+            border-radius: 50%; display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* General Utilities & Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--card-color); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 4px; }
+        .modal-hidden { display: none; opacity: 0; }
+        .modal-visible { display: flex; animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div id="loader" class="loader-overlay hidden"><div class="loader-spinner"></div></div>
+
+    <!-- Login View -->
+    <div id="login-view" class="h-full w-full flex items-center justify-center p-4 transition-opacity duration-500">
+        <div class="w-full max-w-md p-8 space-y-8 card">
+            <h1 class="text-3xl font-bold text-center text-white">MDDC Login</h1>
+            <form id="login-form" class="space-y-6">
+                <input id="username" name="username" type="text" required class="w-full form-input" placeholder="Username" value="admin">
+                <input id="password" name="password" type="password" required class="w-full form-input" placeholder="Password" value="password">
+                <button type="submit" class="w-full btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App View -->
+    <div id="app-view" class="h-full w-full flex flex-col hidden transition-opacity duration-500">
+        <nav class="w-full p-4 flex justify-between items-center border-b border-gray-700 bg-gray-800/70 backdrop-blur-md flex-shrink-0 z-20">
+            <h1 class="text-2xl font-bold text-white tracking-wide">MDDC Platform</h1>
+            <div class="flex items-center gap-4">
+                <span id="welcome-user" class="text-lg hidden sm:block"></span>
+                <button id="logout-btn" class="btn btn-danger px-4 py-2 text-sm">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Content Wrapper -->
+        <div class="flex-grow relative">
+            <main id="dashboard-view" class="absolute inset-0 p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-3xl font-bold text-white">Dashboard</h2>
+                    <button id="add-product-btn" class="btn btn-success w-full sm:w-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        Add New Plant
+                    </button>
+                </div>
+                <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            </main>
+
+            <main id="detail-view" class="absolute inset-0 p-4 sm:p-6 overflow-y-auto hidden flex flex-col custom-scrollbar">
+                <button id="back-to-dashboard-btn" class="btn btn-secondary mb-4 px-4 py-2 text-sm self-start flex-shrink-0">&larr; Back to Dashboard</button>
+                <div class="flex-grow grid grid-cols-1 lg:grid-cols-10 gap-6">
+                    <!-- Video and Control Panel -->
+                    <div class="lg:col-span-7 flex flex-col card p-4 gap-4">
+                        <div class="flex justify-between items-center flex-shrink-0">
+                            <h2 id="tree-name" class="text-xl font-bold text-white"></h2>
+                            <div class="flex gap-2">
+                                <button id="view-mode-normal" class="btn btn-secondary px-3 py-1 text-sm">Normal View</button>
+                                <button id="view-mode-ai" class="btn btn-primary px-3 py-1 text-sm">AI Detection</button>
+                            </div>
+                        </div>
+                        <div class="flex-grow flex gap-4">
+                            <!-- ### START: VIDEO STREAM AREA ### -->
+                            <div class="flex-grow relative rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px] bg-black" id="video-container">
+                                <video id="realtime-video" class="absolute top-0 left-0 w-full h-full" autoplay playsinline muted></video>
+                                <canvas id="overlay-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                                <div id="stream-status" class="absolute inset-0 flex items-center justify-center text-gray-400 text-lg">Waiting for video stream...</div>
+                            </div>
+                            <!-- ### END: VIDEO STREAM AREA ### -->
+                        </div>
+                    </div>
+
+                    <!-- Chat Panel -->
+                    <div class="lg:col-span-3 flex flex-col card p-4">
+                        <h3 class="text-xl font-bold text-white border-b border-gray-600 pb-2 mb-4 flex-shrink-0">AI Chat</h3>
+                        <div id="chat-messages" class="flex-grow chat-messages overflow-y-auto mb-4 pr-2 space-y-4 min-h-0 custom-scrollbar">
+                             <div class="flex justify-start"><div class="bg-gray-600 p-3 rounded-lg max-w-xs">Hello! I will provide real-time updates from the video stream.</div></div>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <input id="chat-input" type="text" class="flex-grow form-input" placeholder="Type a message...">
+                            <button id="chat-send-btn" class="btn btn-primary px-4 py-2">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals (Unchanged from original) -->
+    <div id="modal" class="modal-hidden fixed inset-0 bg-black/70 items-center justify-center z-50 p-4">
+        <div class="card w-full max-w-2xl p-6 relative">
+            <h3 id="modal-title" class="text-2xl font-bold text-white mb-4"></h3>
+            <div id="modal-content" class="text-sm space-y-2"></div>
+            <button id="modal-close-btn" class="absolute top-2 right-3 text-gray-400 hover:text-white text-3xl">&times;</button>
+        </div>
+    </div>
+    <div id="add-product-modal" class="modal-hidden fixed inset-0 bg-black/70 items-center justify-center z-50 p-4">
+        <div class="card w-full max-w-lg p-6 relative">
+            <h3 class="text-2xl font-bold text-white mb-4">Add New Plant</h3>
+            <form id="add-product-form" class="space-y-4">
+                 <input id="productID" type="text" required class="w-full form-input" placeholder="Product ID (e.g., Plant_01)">
+                 <input id="productName" type="text" required class="w-full form-input" placeholder="Plant Name">
+                 <textarea id="productDescription" rows="3" required class="w-full form-input" placeholder="Description"></textarea>
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="add-product-cancel-btn" class="btn btn-danger">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script type="module">
+// --- DOM Elements ---
+const loginView = document.getElementById('login-view'), appView = document.getElementById('app-view'),
+      dashboardView = document.getElementById('dashboard-view'), detailView = document.getElementById('detail-view'),
+      productGrid = document.getElementById('product-grid'), loginForm = document.getElementById('login-form'),
+      logoutBtn = document.getElementById('logout-btn'), welcomeUser = document.getElementById('welcome-user'),
+      backToDashboardBtn = document.getElementById('back-to-dashboard-btn'),
+      treeName = document.getElementById('tree-name'),
+      modal = document.getElementById('modal'), modalTitle = document.getElementById('modal-title'),
+      modalContent = document.getElementById('modal-content'), modalCloseBtn = document.getElementById('modal-close-btn'),
+      addProductModal = document.getElementById('add-product-modal'), addProductBtn = document.getElementById('add-product-btn'),
+      addProductForm = document.getElementById('add-product-form'), addProductCancelBtn = document.getElementById('add-product-cancel-btn'),
+      loader = document.getElementById('loader'),
+      chatMessages = document.getElementById('chat-messages');
+
+// --- NEW REAL-TIME ELEMENTS ---
+const videoContainer = document.getElementById('video-container'),
+      realtimeVideo = document.getElementById('realtime-video'),
+      overlayCanvas = document.getElementById('overlay-canvas'),
+      streamStatus = document.getElementById('stream-status'),
+      viewModeNormalBtn = document.getElementById('view-mode-normal'),
+      viewModeAiBtn = document.getElementById('view-mode-ai');
+
+// --- State Management ---
+let state = {
+    isLoggedIn: false,
+    currentUser: null,
+    products: [ // Sample data for initial load
+        { productID: 'Plant_A1', name: 'Apple Tree - Section A1', description: 'Golden Delicious variety, 3 years old.', isActive: true },
+        { productID: 'Plant_B2', name: 'Tomato Vine - Section B2', description: 'Cherry tomatoes, nearing harvest.', isActive: true },
+        { productID: 'Plant_C3', name: 'Grape Vine - Section C3', description: 'Concord grapes, requires pruning.', isActive: false },
+    ],
+    selectedProductId: null,
+    isAiDetectionActive: false,
+};
+
+// --- WebRTC Service ---
+const WebRTCService = {
+    ws: null,
+    pc: null,
+    videoElement: null,
+    canvasContext: null,
+    
+    // !!! IMPORTANT: Remember to update this with your newest ngrok URL !!!
+    // Use wss:// and NO port number.
+    WEBSOCKET_URL: 'wss://25e81c62a6c9.ngrok-free.app/stream/ws',
+
+    connect: function(roomName, videoEl, canvasEl) {
+        this.videoElement = videoEl;
+        this.canvasContext = canvasEl.getContext('2d');
+        const clientId = `viewer_${crypto.randomUUID()}`;
+        // Use the endpoint that includes the client ID
+        const fullUrl = `${this.WEBSOCKET_URL}/${roomName}/${clientId}`;
+
+        streamStatus.textContent = `Connecting to stream: ${roomName}...`;
+        this.ws = new WebSocket(fullUrl);
+
+        this.ws.onopen = () => {
+            console.log("WebSocket connected. Announcing presence to broadcaster.");
+            streamStatus.textContent = "Connection established. Requesting video...";
+            
+            // <<< THAY ĐỔI QUAN TRỌNG Ở ĐÂY >>>
+            // Gửi tin nhắn "gõ cửa" để báo cho camera biết có người xem
+            this.ws.send(JSON.stringify({ type: 'viewer_joined', from: clientId }));
+        };
+
+        this.ws.onmessage = async (event) => {
+            const message = JSON.parse(event.data);
+            console.log("Received message:", message);
+            
+            // The logic now correctly expects an 'offer' message *after* announcing itself.
+            if (message.offer) { // The old code had 'message.sdp.type', we adapt to the simple relay
+                this.handleOffer(message.offer);
+            } else if (message.iceCandidate) { // The old code had 'message.candidate'
+                if (this.pc) {
+                   this.pc.addIceCandidate(new RTCIceCandidate(message.iceCandidate)).catch(e => console.error("Error adding ICE candidate:", e));
+                }
+            } else if (message.type === 'yolo_results') {
+                if (state.isAiDetectionActive) {
+                    this.renderDetections(message.detections);
+                }
+                this.updateChat(message.detections);
+            } else if (message.error) {
+                streamStatus.textContent = `Error: ${message.error}`;
+            }
+        };
+        
+        this.ws.onclose = () => {
+            console.log("WebSocket disconnected.");
+            streamStatus.textContent = "Disconnected from stream.";
+            this.cleanup();
+        };
+
+        this.ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            streamStatus.textContent = "Connection error.";
+            this.cleanup();
+        };
+    },
+
+    handleOffer: async function(offer) {
+        if (this.pc) {
+            console.warn("PeerConnection already exists. Ignoring new offer.");
+            return;
+        }
+        this.pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+        this.pc.ontrack = (event) => {
+            console.log("Received video track!");
+            if (this.videoElement.srcObject !== event.streams[0]) {
+                this.videoElement.srcObject = event.streams[0];
+                streamStatus.style.display = 'none'; // Hide status text on video play
+                 this.videoElement.onloadedmetadata = () => {
+                    this.resizeCanvas();
+                };
+            }
+        };
+
+        this.pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log("Sending ICE candidate:", event.candidate);
+                // Adapt to the simple relay's expected format
+                this.ws.send(JSON.stringify({ iceCandidate: event.candidate.toJSON() }));
+            }
+        };
+
+        await this.pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await this.pc.createAnswer();
+        await this.pc.setLocalDescription(answer);
+        
+        // Adapt to the simple relay's expected format
+        this.ws.send(JSON.stringify({ answer: this.pc.localDescription.toJSON() }));
+    },
+    
+    renderDetections: function(detections) {
+        if (!this.canvasContext || !this.videoElement) return;
+
+        const canvas = this.canvasContext.canvas;
+        const video = this.videoElement;
+
+        const { videoWidth, videoHeight } = video;
+        const { clientWidth, clientHeight } = video;
+
+        if (!videoWidth || !videoHeight) return;
+
+        const scaleX = clientWidth / videoWidth;
+        const scaleY = clientHeight / videoHeight;
+
+        this.canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+        detections.forEach(det => {
+            const x1 = det.box[0] * scaleX;
+            const y1 = det.box[1] * scaleY;
+            const width = (det.box[2] - det.box[0]) * scaleX;
+            const height = (det.box[3] - det.box[1]) * scaleY;
+            
+            this.canvasContext.strokeStyle = 'rgba(59, 130, 246, 0.9)';
+            this.canvasContext.lineWidth = 2;
+            this.canvasContext.strokeRect(x1, y1, width, height);
+            
+            const label = `${det.label} (${(det.confidence * 100).toFixed(1)}%)`;
+            this.canvasContext.fillStyle = 'rgba(59, 130, 246, 0.9)';
+            this.canvasContext.fillRect(x1, y1 - 20, this.canvasContext.measureText(label).width + 10, 20);
+            this.canvasContext.fillStyle = 'white';
+            this.canvasContext.font = '14px Roboto';
+            this.canvasContext.fillText(label, x1 + 5, y1 - 5);
+        });
+    },
+    
+    updateChat: function(detections) {
+        const appleCount = detections.filter(d => d.label === 'apple').length;
+        const lastMessage = chatMessages.lastElementChild;
+        if (lastMessage && lastMessage.dataset.type === 'detection_update') {
+            lastMessage.querySelector('span').textContent = appleCount;
+        } else {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex justify-start';
+            messageDiv.dataset.type = 'detection_update';
+            messageDiv.innerHTML = `<div class="bg-gray-600 p-3 rounded-lg max-w-xs">System detected <span class="font-bold text-white">${appleCount}</span> fruits.</div>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    },
+
+    resizeCanvas: function() {
+        if (!this.videoElement || !this.canvasContext) return;
+        const canvas = this.canvasContext.canvas;
+        canvas.width = this.videoElement.clientWidth;
+        canvas.height = this.videoElement.clientHeight;
+    },
+
+    cleanup: function() {
+        if (this.pc) {
+            this.pc.close();
+            this.pc = null;
+        }
+        if (this.videoElement) {
+            this.videoElement.srcObject = null;
+        }
+        if(this.canvasContext) {
+            this.canvasContext.clearRect(0, 0, this.canvasContext.canvas.width, this.canvasContext.canvas.height);
+        }
+        streamStatus.style.display = 'flex';
+        streamStatus.textContent = "Waiting for video stream...";
+    },
+    
+    disconnect: function() {
+        if (this.ws) {
+            this.ws.close();
+        }
+        this.cleanup();
+    }
+};
+
+// --- UI Functions ---
+const showLoader = () => loader.classList.remove('hidden');
+const hideLoader = () => loader.classList.add('hidden');
+
+const showView = (view) => {
+    [loginView, appView, dashboardView, detailView].forEach(v => v.classList.add('hidden'));
+    
+    if (view === 'login') {
+        loginView.classList.remove('hidden');
+    } else {
+        appView.classList.remove('hidden');
+        if (view === 'dashboard') dashboardView.classList.remove('hidden');
+        else if (view === 'detail') detailView.classList.remove('hidden');
+    }
+};
+
+const showModal = (title, contentHTML) => { /* Unchanged */ };
+const hideModal = () => { /* Unchanged */ };
+const showAddProductModal = () => { addProductForm.reset(); addProductModal.classList.remove('modal-hidden'); addProductModal.classList.add('modal-visible'); };
+const hideAddProductModal = () => { addProductModal.classList.add('modal-hidden'); addProductModal.classList.remove('modal-visible'); };
+
+// --- Main Logic ---
+const renderDashboard = () => {
+    productGrid.innerHTML = state.products.map(product => `
+        <div class="card p-4 flex flex-col justify-between cursor-pointer transition-transform duration-300 hover:-translate-y-1" data-product-id="${product.productID}">
+            <div>
+                <div class="flex justify-between items-start">
+                    <h3 class="text-lg font-bold text-white">${product.name}</h3>
+                    <span class="text-xs font-bold px-2 py-1 rounded ${product.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${product.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                </div>
+                <p class="text-sm mt-2 text-gray-300">${product.description}</p>
+            </div>
+            <div class="text-xs mt-4 pt-4 border-t border-gray-600 text-gray-400">ID: ${product.productID}</div>
+        </div>`).join('');
+};
+
+const handleLogin = (e) => {
+    e.preventDefault();
+    showLoader();
+    setTimeout(() => {
+        state.isLoggedIn = true;
+        state.currentUser = { name: document.getElementById('username').value };
+        welcomeUser.textContent = `Welcome, ${state.currentUser.name}`;
+        renderDashboard();
+        showView('dashboard');
+        hideLoader();
+    }, 500);
+};
+
+const handleLogout = () => {
+    WebRTCService.disconnect(); // Disconnect stream on logout
+    showLoader();
+    setTimeout(() => {
+        state.isLoggedIn = false; state.currentUser = null;
+        showView('login');
+        hideLoader();
+    }, 300);
+};
+
+const showDetailView = (productId) => {
+    const product = state.products.find(p => p.productID === productId);
+    if (!product) return;
+    state.selectedProductId = productId;
+    treeName.textContent = `Live Analysis: ${product.name}`;
+    chatMessages.innerHTML = '<div class="flex justify-start"><div class="bg-gray-600 p-3 rounded-lg max-w-xs">Hello! I will provide real-time updates from the video stream.</div></div>';
+    showView('detail');
+    
+    // Connect to the real-time stream
+    WebRTCService.connect(productId, realtimeVideo, overlayCanvas);
+    window.addEventListener('resize', () => WebRTCService.resizeCanvas());
+};
+
+// --- Event Listeners ---
+document.addEventListener('DOMContentLoaded', () => {
+    loginForm.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    
+    backToDashboardBtn.addEventListener('click', () => {
+        WebRTCService.disconnect();
+        showView('dashboard');
+    });
+
+    modalCloseBtn.addEventListener('click', hideModal);
+    addProductBtn.addEventListener('click', showAddProductModal);
+    addProductCancelBtn.addEventListener('click', hideAddProductModal);
+
+    addProductForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newProduct = {
+            productID: document.getElementById('productID').value,
+            name: document.getElementById('productName').value,
+            description: document.getElementById('productDescription').value,
+            isActive: true
+        };
+        state.products.push(newProduct);
+        hideAddProductModal();
+        renderDashboard();
+    });
+
+    productGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('[data-product-id]');
+        if (card) showDetailView(card.dataset.productId);
+    });
+    
+    viewModeNormalBtn.addEventListener('click', () => {
+        state.isAiDetectionActive = false;
+        WebRTCService.canvasContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        overlayCanvas.classList.add('hidden');
+        viewModeNormalBtn.classList.replace('btn-secondary', 'btn-primary');
+        viewModeAiBtn.classList.replace('btn-primary', 'btn-secondary');
+    });
+
+    viewModeAiBtn.addEventListener('click', () => {
+        state.isAiDetectionActive = true;
+        overlayCanvas.classList.remove('hidden');
+        viewModeAiBtn.classList.replace('btn-secondary', 'btn-primary');
+        viewModeNormalBtn.classList.replace('btn-primary', 'btn-secondary');
+        WebRTCService.resizeCanvas(); // Ensure canvas is sized correctly
+    });
+    
+    // Initialize view
+    showView('login');
+    viewModeNormalBtn.click(); // Start in normal view by default
+});
+</script>
+</body>
+</html>
+
