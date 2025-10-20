@@ -88,3 +88,9 @@ celerybeat.pid
 # Windows
 Thumbs.db
 ehthumbs.db
+# Ignore all compiled Python files (including cpython-* files)
+*.py[cod]
+*.cpython-*.pyc
+__pycache__/
+*.py[cod]
+*$py.class

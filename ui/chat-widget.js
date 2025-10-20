@@ -42,7 +42,7 @@ function unlockAudioPlayback() {
 class ChatWidget {
     constructor() {
         this.config = window.APP_CONFIG || {};
-        this.currentLanguage = "Vietnamese";
+        this.currentLanguage = "Tiếng Việt";
         this.currentLangCode = "vi-VN";
         this.isRecording = false;
         this.recognition = null;

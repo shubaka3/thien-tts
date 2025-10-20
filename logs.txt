@@ -1,0 +1,13 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/home/thienhp/Projects/thien-tts']
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+INFO:     Started reloader process [564403] using StatReload
+INFO:     Started server process [564405]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:43556 - "GET /ui/chat-widget.html?ai=default&encryption_api=f3c49621-cc62-457c-8471-2dd048983e7d&encryption_secret=200feb74-12eb-43ee-b674-902fc609f3be&email=user@example.com HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:43568 - "GET /ui/chat-widget.css?v=1.0.1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43582 - "GET /ui/chat-widget.js?v=1.0.1 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59654 - "POST /synthesize/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59660 - "GET /download/3433d330-b7f9-4844-a4b3-73800750a904.mp3 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:51222 - "DELETE /delete/3433d330-b7f9-4844-a4b3-73800750a904.mp3 HTTP/1.1" 200 OK
